@@ -43,7 +43,7 @@ find $1 -mindepth 1 -maxdepth 1 -type d |\
 for fo in "$1"/*
 do
 	if [ -d "$fo" ]; then
-		find "$fo" -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} > "$2"
+		find "$fo" -maxdepth 1 -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} > "$2"
 		./compute_spcstc.sh "${fo}/foldmason_aa.fa" >> "$2"
 		./compute_spcstc.sh "${fo}/clustalo.fa" >> "$2"
 		./compute_spcstc.sh "${fo}/famsa.fa" >> "$2"
