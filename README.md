@@ -6,7 +6,8 @@
 | compute_spcstc.sh | Compute SoP (forward and backward), TC and CS scores for a Homstrad family |
 | download_homstrad.sh | Downloads latest Homstrad database from FTP, unpacks and fixes igV family |
 | extractLDDT.awk | Extract LDDT scores from msa2lddt HTML report |
-| align_family.sh | Run tool suites on protein family folder and compute LDDT scores (+SP/TC/CS if Homstrad MSA found |
+| align_family.sh | Run tools on a given folder and generate msa2lddt reports on each resulting MSA |
+| align_families.sh | Run tools on all subdirectories of given folder and compute LDDT scores (+SP/TC/CS if Homstrad MSA found) |
 
 # Instructions
 ## Prerequisites
