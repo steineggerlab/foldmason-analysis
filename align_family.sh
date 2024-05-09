@@ -54,7 +54,7 @@ fi
 
 # Generate LDDT reports
 DB="${1}/foldmason_tmp/latest/structures"
-if [ -e "${1}/${1}_msa.fa" ]; then
+if [ -e "${1}/${FAMILY}_msa.fa" ]; then
 	foldmason msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fa" "${1}/homstrad.html"
 fi
 foldmason msa2lddtreport "$DB" "${1}/mustang/mustang.afasta" "${1}/mustang.html"
