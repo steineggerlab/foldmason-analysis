@@ -29,9 +29,11 @@
 # 
 # scores.tsv will contain LDDT/SoP/TC/CS scores in 4 column TSV (family tool scoreType score)
 # e.g.
-# 	family1 foldmason lddt 0.6
-# 	family1 muscle sp_fwd 0.3
-# 	family1 mafft tc 0.7
+# 	family1	foldmason	lddt 0.6
+# 	family1	muscle	sp_fwd	0.3
+# 	family1	mafft	tc	0.7
+#
+# times.tsv will be 3 column TSV (family tool time)
 
 if [ "$#" -ne 3 ]; then
     echo "Error: 3 arguments are required."
