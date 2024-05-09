@@ -48,7 +48,7 @@ THREADS="${THREADS:=1}"
 
 # Run all aligners on families in $1
 find $1 -mindepth 1 -maxdepth 1 -type d |\
-	xargs -I {} THREADS="$THREADS" ./run_family.sh {}
+	xargs -I {} THREADS="$THREADS" ./align_family.sh {}
 
 # Score everything; take LDDT score from HTML reports, compute SP/TC/CS with T-coffee
 for fo in "$1"/*

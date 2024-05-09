@@ -15,6 +15,7 @@
 THREADS="${THREADS:=1}"
 PDB="${1}/pdbs/"
 AA="${1}/${1}_aa.fasta"
+FAMILY=$(basename "$1")
 
 FMT="Command being timed: %C\nUser time (seconds): %U\nSystem time (seconds): %S\nPercent of CPU this job got: %P\nWall clock time (seconds): %e\nAverage shared text size (kbytes): %X\nAverage unshared data size (kbytes): %%D\nAverage stack size (kbytes): %p\nAverage total size (kbytes): %K\nMaximum resident set size (kbytes): %M\nAverage %resident set size (kbytes): %t\nMajor (requiring I/O) page faults: %F\nMinor (reclaiming a frame) page faults: %%R\nVoluntary context switches: %w\nInvoluntary context switches: %c\nSwaps: %W\nFile system inputs: %I\nFile system %outputs: %O\nSocket messages sent: %s\nSocket messages received: %r\nSignals delivered: %k\nPage size (bytes): %Z\nExit %status: %x"
 
@@ -53,6 +54,9 @@ fi
 
 # Generate LDDT reports
 DB="${1}/foldmason_tmp/latest/structures"
+if [ -e "${1}/${1}_msa.fa" ]; then
+	foldmason msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fa" "${1}/homstrad.html"
+fi
 foldmason msa2lddtreport "$DB" "${1}/mustang/mustang.afasta" "${1}/mustang.html"
 foldmason msa2lddtreport "$DB" "${1}/mTM_result/result.fasta" "${1}/mustang.html"
 foldmason msa2lddtreport "$DB" "${1}/matt/matt.fasta" "${1}/matt.html"
