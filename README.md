@@ -26,8 +26,25 @@ mTM-align
 t_coffee (for computing SoP/TC/CS scores)
 ```
 
+Also that the directory structure of the dataset resembles:
+
+```
+folder/
+    family1/
+        pdbs/
+            structure1.pdb
+            structure2.pdb
+            structure3.pdb
+            ...
+        family1_msa.fa (Homstrad reference alignment)
+        family1_aa.fa
+    family2/
+        ...
+    ...
+```
+
 ## Process
 1. Run `download_homstrad.sh` to download latest Homstrad release and prepare it for analysis.
    Generates directories `homstrad_db` (raw) and `homstrad_clean` (processed).
-2. Run `./run_homstrad.sh homstrad_clean homstrad_scores.tsv` to run the full suite of
-   tools on the Homstrad database and save all scores to `homstrad_scores.tsv`.
+2. Run `./align_families.sh homstrad_clean homstrad_scores.tsv homstrad_times.tsv` to run the full suite of
+   tools on the Homstrad database, save all scores to `homstrad_scores.tsv` and times to `homstrad_times.tsv`.
