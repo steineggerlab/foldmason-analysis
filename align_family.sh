@@ -25,11 +25,7 @@ fi
 if [ ! -e "${1}/foldmason_aa.fa" && -x foldmason ]; then
 	/usr/bin/time -o "${1}/foldmason.time" -f "${FMT}" foldmason easy-msa \
 		"$PDB" "${1}/foldmason" "${1}/foldmason_tmp" \
-		--threads $THREADS \
-		--precluster 1 \
-		--report-mode 0 \
-		--filter-msa 0 \
-		--diff 10
+		--threads $THREADS
 fi
 if [ ! -e "${1}/matt" && -x Matt ]; then
 	/usr/bin/time -o "${1}/matt.time" -f "${FMT}" Matt -o "${1}/matt" $(find "$PDB" -type f) -t "$THREADS"
