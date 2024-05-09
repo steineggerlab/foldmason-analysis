@@ -2,7 +2,7 @@
 
 # Runs all tools then evaluates LDDT and SoP/TC/CS
 #
-# ./run_homstrad.sh families/ scores.tsv
+# ./run_homstrad.sh families/ scores.tsv times.tsv
 #
 # Where families is a directory of directories for Homstrad families/AFDB clusters
 # Each family directory should be of structure:
@@ -33,6 +33,15 @@
 # 	family1 muscle sp_fwd 0.3
 # 	family1 mafft tc 0.7
 
+if [ "$#" -ne 3 ]; then
+    echo "Error: 3 arguments are required."
+    echo "Usage: $0 dataDir/ scores.tsv times.tsv"
+    exit 1
+fi
+
+if [ -e "$2" ]; then rm "$2"; fi
+if [ -e "$3" ]; then rm "$3"; fi
+
 THREADS="${THREADS:=1}"
 
 # Run all aligners on families in $1
@@ -45,7 +54,7 @@ do
 	if [ ! -d "$fo" ]; then
 		continue
 	fi
-	find "$fo" -maxdepth 1 -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} > "$2"
+	find "$fo" -maxdepth 1 -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} >> "$2"
 
 	# If the directory has a family_msa.fa, assume it is Homstrad and compute SP/TC/CS
 	family=$(basename "$fo")
@@ -60,4 +69,8 @@ do
 		./compute_spcstc.sh "${fo}/matt/matt.fasta" >> "$2"
 		./compute_spcstc.sh "${fo}/mustang/mustang.afasta" >> "$2"
 	fi
+
+	# Get run times for each tool
+	find "$fo" -maxdepth 1 -type f -name "*.time" |\
+		xargs -I{} -P"$THREADS" awk '$0 ~ /^Wall/ {split(FILENAME, a, "/"); sub(".time", "", a[3]); print a[2]"\t"a[3]"\t"$5}' {} >> $3
 done
