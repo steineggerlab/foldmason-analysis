@@ -42,8 +42,14 @@ find $1 -mindepth 1 -maxdepth 1 -type d |\
 # Score everything; take LDDT score from HTML reports, compute SP/TC/CS with T-coffee
 for fo in "$1"/*
 do
-	if [ -d "$fo" ]; then
-		find "$fo" -maxdepth 1 -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} > "$2"
+	if [ ! -d "$fo" ]; then
+		continue
+	fi
+	find "$fo" -maxdepth 1 -name '*.html' | xargs -I{} -P "$THREADS" extractLDDT.awk {} > "$2"
+
+	# If the directory has a family_msa.fa, assume it is Homstrad and compute SP/TC/CS
+	family=$(basename "$fo")
+	if [ -e "${fo}/${basename}_msa.fa" ]; then
 		./compute_spcstc.sh "${fo}/foldmason_aa.fa" >> "$2"
 		./compute_spcstc.sh "${fo}/clustalo.fa" >> "$2"
 		./compute_spcstc.sh "${fo}/famsa.fa" >> "$2"
