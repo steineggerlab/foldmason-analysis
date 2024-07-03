@@ -12,16 +12,16 @@ if [ ! -d homstrad_db ]; then
 	mv homstrad_db/igV/igV-sup.pdb homstrad_db/igV/igV-sup.pdb.orig
 	
 	echo \
-	'REMARK The domains in this file are:
-	REMARK    1tvdb   chain    H
-	REMARK    1qfpa   chain    G
-	REMARK    1b88a   chain    A
-	REMARK    1cd8    chain    B
-	REMARK    3cd4    chain    I
-	REMARK    1neu    chain    F
-	REMARK    1hnga   chain    E
-	REMARK    1cid1   chain    C
-	REMARK    1hnf    chain    D' > homstrad_db/igV/igV-sup.pdb
+'REMARK The domains in this file are:
+REMARK    1tvdb   chain    H
+REMARK    1qfpa   chain    G
+REMARK    1b88a   chain    A
+REMARK    1cd8    chain    B
+REMARK    3cd4    chain    I
+REMARK    1neu    chain    F
+REMARK    1hnga   chain    E
+REMARK    1cid1   chain    C
+REMARK    1hnf    chain    D' > homstrad_db/igV/igV-sup.pdb
 	cat homstrad_db/igV/igV-sup.pdb.orig >> homstrad_db/igV/igV-sup.pdb
 fi
 

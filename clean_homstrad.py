@@ -38,9 +38,9 @@ def main(folder_path, output_path):
         text = fp.read()
     members = []
     sequences = []
-    for name, sequence in re.findall(r"^>.+?;(?P<name>.+?)$\nstructure[A-Z].+?$\n(?P<sequence>.+?)\*", text, re.MULTILINE | re.DOTALL):
+    for name, sequence in re.findall(r"^>.+?;(?P<name>.+?)$\nstructure[A-Z]?.+?$\n(?P<sequence>.+?)\*", text, re.MULTILINE | re.DOTALL):
         members.append(name)
-        sequences.append(str(sequence).replace('\n', ''))
+        sequences.append(str(sequence).replace('\n', '').replace('/', '-'))
 
     # Read superposition PDB file
     with superposition.open() as fp:
@@ -53,7 +53,7 @@ def main(folder_path, output_path):
     remark = {
         chain: name
         for (name, chain) in
-        re.findall(r"^REMARK *(?P<name>\w+?) *chain (?P<chain>[A-Z]*) $", text, re.MULTILINE)
+        re.findall(r"^REMARK\s*(?P<name>\w+?)\s*chain\s*(?P<chain>[A-Z0-9]*)$", text, re.MULTILINE)
     }
     
     # Split the superposed PDB into individual files
@@ -62,22 +62,22 @@ def main(folder_path, output_path):
     single_pdbs = defaultdict(str)
     last_chain = None
     last_residue = None
-    chain_index = -1
+    chain_index = 0
     residue_index = 0
+    name = ""
     for line in text.split('\n'):
-        if line.startswith("REMARK"):
-            continue
         if line.startswith("ATOM"):
             chain = line[21:22]
-            name = remark.get(chain, members[chain_index])
             residue = line[22:27]
+            # TODO have to check if this is the first iteration or not, otherwise indices will be wrong
             if residue != last_residue:
                 residue_index += 1
                 last_residue = residue
             if chain != last_chain:
+                name = remark.get(chain, members[chain_index])
+                chain_index += 1
                 residue_index = 0
                 last_chain = chain
-                chain_index += 1
             line = line[0:22] + f"{residue_index:-4}" + line[26:] + '\n'
             single_pdbs[name] += line
 
@@ -93,14 +93,14 @@ def main(folder_path, output_path):
     msa_output = output / f"{folder.stem}_msa.fasta"
     print(f"Writing {msa_output}")
     with msa_output.open('w') as fp:
-        records = "\n".join(f">{name}.pdb\n{sequence}" for name, sequence in zip(members, sequences))
+        records = "".join(f">{name}\n{sequence}\n" for name, sequence in zip(members, sequences))
         fp.write(records)
 
     # Filter out gaps for raw AA sequence
     aa_output = output / f"{folder.stem}_aa.fasta"
     print(f"Writing {aa_output}")
     with aa_output.open('w') as fp:
-        records = "\n".join(f">{name}.pdb\n{sequence.replace('-', '')}" for name, sequence in zip(members, sequences))
+        records = "".join(f">{name}\n{sequence.replace('-', '')}\n" for name, sequence in zip(members, sequences))
         fp.write(records)
 
 
