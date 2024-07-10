@@ -53,7 +53,7 @@ def main(folder_path, output_path):
     remark = {
         chain: name
         for (name, chain) in
-        re.findall(r"^REMARK\s*(?P<name>\w+?)\s*chain\s*(?P<chain>[A-Z0-9]*)$", text, re.MULTILINE)
+        re.findall(r"^REMARK\s*(?P<name>\w+?)\s*chain\s*(?P<chain>[A-Z0-9]*)\s*?$", text, re.MULTILINE)
     }
     
     # Split the superposed PDB into individual files
@@ -69,7 +69,6 @@ def main(folder_path, output_path):
         if line.startswith("ATOM"):
             chain = line[21:22]
             residue = line[22:27]
-            # TODO have to check if this is the first iteration or not, otherwise indices will be wrong
             if residue != last_residue:
                 residue_index += 1
                 last_residue = residue

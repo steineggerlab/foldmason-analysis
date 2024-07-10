@@ -45,10 +45,9 @@ THREADS="${THREADS:=1}"
 
 # Run all aligners on families in $1
 find $1 -mindepth 1 -maxdepth 1 -type d |\
-	THREADS="$THREADS" xargs -I {} ./align_family.sh {} foldmason
+	THREADS=1 xargs -I{} -P "$THREADS" ./align_family.sh {} none
 
 # Get scores per tool
-for fo in "$1"/*
-do
-	THREADS="$THREADS" ./compute_scores.sh "$1"
-done | sort > "$2"
+find $1 -mindepth 1 -maxdepth 1 -type d |\
+	THREADS=1 xargs -I{} -P "$THREADS" ./compute_scores.sh {} |\
+       	sort > "$2"

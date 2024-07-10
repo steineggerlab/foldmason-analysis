@@ -18,7 +18,6 @@ THREADS="${THREADS:=1}"
 FAMILY=$(basename "$1")
 PDB="${1}/pdbs/"
 AA="${1}/${FAMILY}_aa.fasta"
-echo "${AA}"
 
 FMT="Command being timed: %C\nUser time (seconds): %U\nSystem time (seconds): %S\nPercent of CPU this job got: %P\nWall clock time (seconds): %e\nAverage shared text size (kbytes): %X\nAverage unshared data size (kbytes): %%D\nAverage stack size (kbytes): %p\nAverage total size (kbytes): %K\nMaximum resident set size (kbytes): %M\nAverage %resident set size (kbytes): %t\nMajor (requiring I/O) page faults: %F\nMinor (reclaiming a frame) page faults: %%R\nVoluntary context switches: %w\nInvoluntary context switches: %c\nSwaps: %W\nFile system inputs: %I\nFile system %outputs: %O\nSocket messages sent: %s\nSocket messages received: %r\nSignals delivered: %k\nPage size (bytes): %Z\nExit %status: %x"
 
@@ -46,6 +45,7 @@ declare -A tools=(
 	[famsa]=false
 	[mafft]=false
 	[muscle]=false
+	[none]=false
 )
 
 # no args: help
@@ -64,6 +64,8 @@ elif [[ $# -eq 1 ]]; then
 			exit 1
 		fi
 	done
+elif [[ $# -eq 2 && $2 -eq "none" ]]; then
+	: # no op
 elif [[ $# -gt 1 ]]; then
 	for tool in "${@:2}"; do
 		if [[ ! -v tools["$tool"] ]]; then
@@ -79,22 +81,28 @@ elif [[ $# -gt 1 ]]; then
 	done
 fi
 
-echo "Running tools:"
-for tool in "${!tools[@]}"; do
-	if [[ "${tools[$tool]}" == true ]]; then
-		echo "  ${tool}: ${paths[$tool]}"
-	fi
-done
+if [[ "${tools[none]}" == false ]]; then
+	echo "Running tools:"
+	for tool in "${!tools[@]}"; do
+		if [[ "${tools[$tool]}" == true ]]; then
+			echo "  ${tool}: ${paths[$tool]}"
+		fi
+	done
+fi
 
 # Structure aligners
 if [[ "${tools[caretta]}" == true && ! -e "${1}/caretta_results" ]]; then
 	/usr/bin/time -o "${1}/caretta.time" -f "${FMT}" "${paths[caretta]}" "$PDB" -t "$THREADS" -o "${1}/caretta_results"
 fi
-if [[ "${tools[foldmason]}" == true && ! -e "${1}/foldmason_aa.fa" ]]; then
-	echo "Running foldmason now"
-	/usr/bin/time -o "${1}/foldmason_refine100.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
-		"$PDB" "${1}/foldmason_refine100" "${1}/foldmason_tmp" \
-		--threads $THREADS --report-mode 1 --refine-iters 100 --refine-seed 48335597
+if [[ "${tools[foldmason]}" == true ]]; then
+	/usr/bin/time -o "${1}/foldmason.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
+		"$PDB" "${1}/foldmason" "${1}/foldmason_tmp" --threads $THREADS 
+	/usr/bin/time -o "${1}/foldmason_refine1000.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
+		"$PDB" "${1}/foldmason_refine1000" "${1}/foldmason_refine1000_tmp" \
+	       	--refine-iters 1000 --refine-seed 48335597 --threads $THREADS --pair-threshold 0
+	/usr/bin/time -o "${1}/foldmason_refine1000_core.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
+		"$PDB" "${1}/foldmason_refine1000_core" "${1}/foldmason_refine1000_core_tmp" \
+	       	--refine-iters 1000 --refine-seed 48335597 --threads $THREADS --pair-threshold 1
 fi
 if [[ "${tools[matt]}" == true && ! -e "${1}/matt" ]]; then
 	/usr/bin/time -o "${1}/matt.time" -f "${FMT}" "${paths[matt]}" -o "${1}/matt" $(find "$PDB" -type f) -t "$THREADS"
@@ -122,19 +130,27 @@ fi
 
 # Generate LDDT reports
 DB="${1}/foldmason_tmp/latest/structures"
+
+compute_lddt () {
+	if [[ "${tools[$1]}" == false ]]; then return; fi
+	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "$3"
+	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "${3/.html/_ungap.html}" --pair-threshold 1
+}
+
 if [[ -e $DB ]]; then
 	echo "Computing LDDT scores"
-
-if [[ -e "${1}/${FAMILY}_msa.fasta" ]]; then
-	"${paths[foldmason]}" msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html"
-fi
-if [[ "${tools["muscle"]}"   == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/muscle.fa" "${1}/muscle.html"; fi
-if [[ "${tools["caretta"]}"  == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/caretta_results/result.fasta" "${1}/caretta.html"; fi
-if [[ "${tools["matt"]}"     == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/matt/matt.fasta" "${1}/matt.html"; fi
-if [[ "${tools["mtm"]}"      == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/mTM_result/result.fasta" "${1}/mustang.html"; fi
-if [[ "${tools["mustang"]}"  == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/mustang/mustang.afasta" "${1}/mustang.html"; fi
-if [[ "${tools["clustalo"]}" == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/clustalo.fa" "${1}/clustalo.html"; fi
-if [[ "${tools["famsa"]}"    == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/famsa.fa" "${1}/famsa.html"; fi
-if [[ "${tools["mafft"]}"    == true ]]; then "${paths[foldmason]}" msa2lddtreport "$DB" "${1}/mafft.fa" "${1}/mafft.html"; fi
-
+	if [[ -e "${1}/${FAMILY}_msa.fasta" ]]; then
+		"${paths[foldmason]}" msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html"
+	fi
+	compute_lddt "foldmason" "${1}/foldmason_aa.fa"              "${1}/foldmason.html"
+	compute_lddt "foldmason" "${1}/foldmason_refine1000_aa.fa"   "${1}/foldmason_refine1000.html"
+	compute_lddt "foldmason" "${1}/foldmason_refine1000_core_aa.fa"   "${1}/foldmason_refine1000_core.html"
+	compute_lddt "muscle"    "${1}/muscle.fa"                    "${1}/muscle.html"
+	compute_lddt "caretta"   "${1}/caretta_results/result.fasta" "${1}/caretta.html"
+	compute_lddt "matt"      "${1}/matt.fasta"                   "${1}/matt.html"
+	compute_lddt "mtm"       "${1}/mTM_result/result.fasta"      "${1}/mtmalign.html"
+	compute_lddt "mustang"   "${1}/mustang.afasta"       	     "${1}/mustang.html"
+	compute_lddt "clustalo"  "${1}/clustalo.fa"                  "${1}/clustalo.html"
+	compute_lddt "famsa"     "${1}/famsa.fa"                     "${1}/famsa.html"
+	compute_lddt "mafft"     "${1}/mafft.fa"                     "${1}/mafft.html"
 fi

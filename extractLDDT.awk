@@ -6,8 +6,8 @@
 
 {
 	if (match($0, /msaLDDT":([0-9]*\.[0-9]*)[},]/, m)) {
-		split(FILENAME, a, "/");
-		sub(/\.html/, "", a[3]);
-		print a[2] "\t" a[3] "\tlddt\t" m[1]
+		n = split(FILENAME, a, "/");
+		sub(/\.html/, "", a[n]);
+		print a[n-1] "\t" a[n] "\tlddt\t" m[1]
 	}
 }
