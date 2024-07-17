@@ -41,13 +41,16 @@ fi
 
 if [ -e "$2" ]; then rm "$2"; fi
 
-THREADS="${THREADS:=1}"
+TOOL_THREADS="${TOOL_THREADS:=1}"
+RUN_THREADS="${RUN_THREADS:=1}"
+SCORE_THREADS="${SCORE_THREADS:=1}"
 
 # Run all aligners on families in $1
 find $1 -mindepth 1 -maxdepth 1 -type d |\
-	THREADS=1 xargs -I{} -P "$THREADS" ./align_family.sh {} none
+	awk 'NR > 798' |\
+	THREADS="$TOOL_THREADS" xargs -I{} -P"$RUN_THREADS" ./align_family.sh {} foldmason
 
 # Get scores per tool
 find $1 -mindepth 1 -maxdepth 1 -type d |\
-	THREADS=1 xargs -I{} -P "$THREADS" ./compute_scores.sh {} |\
+	xargs -I{} -P"$SCORE_THREADS" ./compute_scores.sh {} |\
        	sort > "$2"

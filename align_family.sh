@@ -64,7 +64,7 @@ elif [[ $# -eq 1 ]]; then
 			exit 1
 		fi
 	done
-elif [[ $# -eq 2 && $2 -eq "none" ]]; then
+elif [[ $# -eq 2 && $2 == "none" ]]; then
 	: # no op
 elif [[ $# -gt 1 ]]; then
 	for tool in "${@:2}"; do
