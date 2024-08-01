@@ -10,8 +10,8 @@
 
 # FoldMason
 # Will reuse db for msa2lddt
-foldmason easy-msa $(find all -type f -name '*.pdb') fm_msa tmp
-foldmason easy-msa $(find all -type f -name '*.pdb') fm_pair tmp_pair
+foldmason easy-msa all fm_msa tmp
+foldmason easy-msa pair fm_pair tmp_pair
 foldmason msa2lddt tmp/latest/structures fm_msa_aa.fa
 foldmason msa2lddt tmp/latest/structures fm_pair_aa.fa
 
