@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 # Download PDB files from AlphaFold for each extracted cluster
+# Files will be written to <accession>/pdbs/, the expected file structure for align_families.sh
 
 while IFS=$'\t' read -r acc cath nummem numdom members
 do

@@ -1,4 +1,16 @@
 # AFDB clusters benchmark
+## Files
+| File | Description |
+| --- | --- |
+| `final_clusters.tsv` | AlphaFold clusters used in this benchmark (Columns: `rep_accession`, `cath`, `num_members`, `num_domains`, `members`) |
+| `filter_ted_domains.awk` | Pre-process TED data for SQL entry (remove AF tags, secondary CATH annotations) |
+| `build_ted_db.sh` | Build TED/CATH SQLite3 database from `filter_ted_domains.awk` output |
+| `query_ted_db.sh` | Wrapper script for querying TED/CATH database (requires built AFDB SQLite3 database) |
+| `query_teds.sql` | Internal SQL script for the cluster query |
+| `extract_clusters.awk` | Select clusters from query result |
+| `download.sh` | Download PDB files from AlphaFold based on `final_clusters.tsv` |
+
+
 ## Data preparation
 Download and decompress `2-repId_isDark_nMem_repLen_avgLen_repPlddt_avgPlddt_LCAtaxId.tsv.gz` and
 `5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz` from the [AFDB data dump](https://afdb-cluster.steineggerlab.workers.dev/),
