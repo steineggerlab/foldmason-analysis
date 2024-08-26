@@ -5,6 +5,9 @@ foldmason	obp	0.628894	0.750256
 mtmalign	cam	0.355385	0.212816
 mtmalign	globin	0.769191	0.621599
 mtmalign	obp	0.463284	0.584039
+usalign	cam	0.355385	0.223169
+usalign	globin	0.769191	0.676387
+usalign	obp	0.463284	0.622303
 mustang	cam	0.47297	0.423181
 mustang	globin	0.796617	0.642798
 mustang	obp	0.272319	0.647214
