@@ -34,15 +34,23 @@ foldmason msa2lddt tmp/latest/structures caretta_msa/result.fasta
 # mTM-align
 mTM-align -i <(ls all) -o mtm_msa
 mTM-align -i <(ls pair) -o mtm_pair
-sed -i 's/\.pdb//g' mTM_result/result.fasta
-sed -i 's/\.pdb//g' mTM_result/result.fasta
-foldmason msa2lddt tmp/latest/structures mTM_result/result.fasta
-foldmason msa2lddt tmp/latest/structures mTM_result/result.fasta
+sed -i 's/\.pdb//g' mtm_msa/result.fasta
+sed -i 's/\.pdb//g' mtm_pair/result.fasta
+foldmason msa2lddt tmp/latest/structures mtm_msa/result.fasta
+foldmason msa2lddt tmp/latest/structures mtm_pair/result.fasta
 
 # MUSTANG
 mustang -p all -o mustang_msa -F fasta
 mustang -p pair -o mustang_pair -F fasta
-sed -i 's/\.pdb//g' mustang.afasta
-sed -i 's/\.pdb//g' mustang.afasta
-foldmason msa2lddt tmp/latest/structures mustang.afasta
-foldmason msa2lddt tmp/latest/structures mustang.afasta
+sed -i 's/\.pdb//g' mustang_msa.afasta
+sed -i 's/\.pdb//g' mustang_pair.afasta
+foldmason msa2lddt tmp/latest/structures mustang_msa.afasta
+foldmason msa2lddt tmp/latest/structures mustang_pair.afasta
+
+# US-align
+USalign pair/*.pdb -outfmt 1 > usalign_pair.fasta
+USalign all <(find all -type f -name '*.pdb') -outfmt 1 > usalign_msa.fasta
+sed -i -e '/^[#$]/d; /^$/d; s/\.pdb.*$//g; s/>.*\//>/' usalign_pair.fasta
+sed -i -e '/^[#$]/d; /^$/d; s/\.pdb.*$//g; s/>.*\//>/' usalign_msa.fasta
+foldmason msa2lddt tmp/latest/structures usalign_msa.afasta
+foldmason msa2lddt tmp/latest/structures usalign_pair.afasta
