@@ -4,7 +4,7 @@
 -- then attach the afdb clusters db.
 
 
--- Match on CAT, mismatch on CATH
+-- Table with CAT and CATH domain strings
 CREATE TABLE IF NOT EXISTS cath_annotations AS
 	SELECT
 		accession,
@@ -14,15 +14,17 @@ CREATE TABLE IF NOT EXISTS cath_annotations AS
 	FROM ted_domain
 	GROUP BY accession
 	HAVING cnt >= 2;
-
 CREATE INDEX IF NOT EXISTS idx_cath_annotations_accession ON cath_annotations(accession);
 CREATE INDEX IF NOT EXISTS idx_cath_annotations_cat ON cath_annotations(cat);
 
+-- Foldseek-clustered members
 CREATE TEMP TABLE IF NOT EXISTS filtered_am AS
 	SELECT accession, rep_accession
 	FROM afdb.member
 	WHERE flag = 2;
 
+-- Table with structures with unique domain architectures (i.e. unique H)
+-- Group by CATH, then take the first
 CREATE TABLE IF NOT EXISTS unique_members AS
 	SELECT MIN(filtered_am.accession) as accession
 	FROM filtered_am
@@ -30,14 +32,15 @@ CREATE TABLE IF NOT EXISTS unique_members AS
 	INNER JOIN cath_annotations ca2 on filtered_am.rep_accession == ca2.accession
 	WHERE ca1.cat = ca2.cat
 	GROUP BY filtered_am.rep_accession, ca1.cath;
-
 CREATE INDEX IF NOT EXISTS idx_unique_members_accession ON unique_members(accession);
 
+-- Filter AFDB database for unique structures only
 CREATE TEMP TABLE IF NOT EXISTS unique_am AS
 	SELECT *
 	FROM afdb.member
 	WHERE accession IN unique_members;
 
+-- Re-join CATH annotation data
 CREATE TABLE IF NOT EXISTS cath_clusters AS 
 	SELECT
 		unique_am.accession AS mem_accession,
@@ -49,11 +52,9 @@ CREATE TABLE IF NOT EXISTS cath_clusters AS
 	INNER JOIN cath_annotations ca1 on unique_am.accession == ca1.accession
 	INNER JOIN cath_annotations ca2 on unique_am.rep_accession == ca2.accession;
 
--- SELECT am.rep_accession, ca2.cath, COUNT(1) as num_members, ca2.cnt as num_domains, GROUP_CONCAT(am.accession)
--- FROM afdb.member am
--- INNER JOIN cath_annotations ca1 on am.accession == ca1.accession
--- INNER JOIN cath_annotations ca2 on am.rep_accession == ca2.accession
--- WHERE am.flag = 2 AND ca1.cat = ca2.cat AND ca1.cath != ca2.cath
--- GROUP BY am.rep_accession
--- HAVING num_members >= 20
--- ORDER BY num_domains DESC;
+-- Select clusters with >=2 domains and >=20 members
+SELECT rep_accession, rep_cath, COUNT(mem_accession) AS num_members, num_domains, GROUP_CONCAT(mem_accession)
+FROM cath_clusters
+GROUP BY rep_accession
+HAVING num_domains >= 2 AND num_members >=20
+ORDER BY num_domains DESC;
