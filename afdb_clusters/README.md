@@ -9,6 +9,7 @@
 | `query_teds.sql` | Internal SQL script for the cluster query |
 | `extract_clusters.awk` | Select clusters from query result |
 | `download.sh` | Download PDB files from AlphaFold based on `final_clusters.tsv` |
+| `alignments.tar.gz` | Alignments for all tools on AFDB clusters |
 
 
 ## Data preparation
@@ -26,8 +27,7 @@ pigz -d 5-allmembers-repId-entryId-cluFlag-taxId.tsv.gz
 
 Worth running the following commands once this is built:
 ```sql
-ANALYZE;
-PRAGMA OPTIMIZE;
+PRAGMA optimize;
 VACUUM;
 ```
 
