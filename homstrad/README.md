@@ -4,6 +4,7 @@
 | --- | --- |
 | `clean_homstrad.py` | Clean Homstrad family folders, generate individual PDB files, AA FASTA files, Homstrad MSA |
 | `download_homstrad.sh` | Downloads latest Homstrad database from FTP, unpacks and fixes igV family |
+| `alignments.tar.gz` | Alignments from all tools |
 
 ## Data preparation
 Run `download_homstrad.sh` to download latest Homstrad release and prepare it for analysis.
