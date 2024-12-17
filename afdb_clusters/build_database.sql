@@ -3,7 +3,6 @@
 -- Expects connection to db with ted_domain table (from ted_domains_first_split.tsv)
 -- then attach the afdb clusters db.
 
-
 -- Table with CAT and CATH domain strings
 CREATE TABLE IF NOT EXISTS cath_annotations AS
 	SELECT
@@ -51,10 +50,3 @@ CREATE TABLE IF NOT EXISTS cath_clusters AS
 	FROM unique_am
 	INNER JOIN cath_annotations ca1 on unique_am.accession == ca1.accession
 	INNER JOIN cath_annotations ca2 on unique_am.rep_accession == ca2.accession;
-
--- Select clusters with >=2 domains and >=20 members
-SELECT rep_accession, rep_cath, COUNT(mem_accession) AS num_members, num_domains, GROUP_CONCAT(mem_accession)
-FROM cath_clusters
-GROUP BY rep_accession
-HAVING num_domains >= 2 AND num_members >=20
-ORDER BY num_domains DESC;
