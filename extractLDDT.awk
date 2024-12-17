@@ -31,7 +31,7 @@ BEGIN {
 	}
 
 	# Total columns contributing to score
-	match($0, /\"scores\"\: \[.+\]/);
+	match($0, /"scores": \[.+\]/);
 	if (RLENGTH > 0) {
 		count = 0;
 		array = substr($0, RSTART+11, RLENGTH-12);  # remove "scores": [ and ]
