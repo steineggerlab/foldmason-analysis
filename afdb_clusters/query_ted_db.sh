@@ -5,5 +5,6 @@ sqlite3 "$1" << EOF
 ATTACH DATABASE "$2" AS afdb;
 .mode tabs
 .output "$3"
-.read query_teds.sql
+.read build_database.sql
+.read query_clusters.sql
 EOF
