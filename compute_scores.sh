@@ -10,39 +10,65 @@ REF="${DIR}/${FAMILY}_msa.fasta"
 # 4 column TSV family, tool, type (sp_fwd/sp_rev/tc/cs), score
 compute_score () {
 	if [ ! -e "$1" ]; then return; fi
-	TOOL=$(basename "$1" | sed 's/_aa\.fa//g')
-	TOOL=${TOOL%\.*}
 	SPF=$(t_coffee -other_pg aln_compare -al1 "$REF" -al2 "$1" -compare_mode sp     | awk 'NR==3 {print $4}')
 	SPR=$(t_coffee -other_pg aln_compare -al2 "$REF" -al1 "$1" -compare_mode sp     | awk 'NR==3 {print $4}')
 	CS=$(t_coffee  -other_pg aln_compare -al1 "$REF" -al2 "$1" -compare_mode column | awk 'NR==3 {print $4}')
 	TC=$(t_coffee  -other_pg aln_compare -al1 "$REF" -al2 "$1" -compare_mode tc     | awk 'NR==3 {print $4}')
 	printf "%s\t%s\tsp_fwd\t%f\n%s\t%s\tsp_rev\t%f\n%s\t%s\tcs\t%f\n%s\t%s\ttc\t%f\n" \
-		"$FAMILY" "$TOOL" "$SPF" \
-		"$FAMILY" "$TOOL" "$SPR" \
-		"$FAMILY" "$TOOL" "$CS" \
-		"$FAMILY" "$TOOL" "$TC"
+		"$FAMILY" "$2" "$SPF" \
+		"$FAMILY" "$2" "$SPR" \
+		"$FAMILY" "$2" "$CS" \
+		"$FAMILY" "$2" "$TC"
+}
+
+apply_fn() {
+	local func_name=$1
+	"$func_name" "${DIR}/foldmason_aa.fa" "foldmason"
+	"$func_name" "${DIR}/foldmason_refine100_aa.fa" "foldmason_refine100"
+	"$func_name" "${DIR}/clustalo.fa" "clustalo"
+	"$func_name" "${DIR}/famsa.fa" "famsa"
+	"$func_name" "${DIR}/muscle.fa" "muscle"
+	"$func_name" "${DIR}/mafft.fa" "mafft"
+	"$func_name" "${DIR}/caretta_results/result.fasta" "caretta"
+	"$func_name" "${DIR}/mTM_result/result.fasta" "mtmalign"
+	"$func_name" "${DIR}/usalign.fasta" "usalign"
+	"$func_name" "${DIR}/matt/matt.fasta" "matt"
+	"$func_name" "${DIR}/mustang/mustang.afasta" "mustang"
+}
+
+compute_nirmsd() {
+	PDB=$(realpath "${DIR}/pdbs")
+	TEMPLATE="${DIR}/nirmsd.template"
+	LOG="${DIR}/${2}_nirmsd.log"
+
+	if [ ! -e "$TEMPLATE" ]; then
+		awk -v fo="$PDB" \
+			'/^>/ { header=$1; sub(/^>/, "", header); print $1" _P_ "fo"/"header".pdb" }' \
+			"${DIR}/sequence.fa" > "${DIR}/nirmsd.template"
+	fi
+
+	if [ ! -e "$LOG" ]; then
+		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
+	fi
+
+	awk -v fam="$FAMILY" -v tool="$2" '
+		/TOTAL\s*APDB:/   {print fam "\t" tool "\tapdb\t" $3}
+		/TOTAL\s*iRMSD:/  {print fam "\t" tool "\tirmsd\t" $3}
+		/TOTAL\s*NiRMSD:/ {print fam "\t" tool "\tnirmsd\t" $3}
+	' "$LOG"
 }
 
 # If the directory has a family_msa.fa, assume it is Homstrad and compute SP/TC/CS
 if [ -e "$REF" ]
 then
-	compute_score "${DIR}/foldmason_aa.fa"
-	compute_score "${DIR}/foldmason_refine1000_aa.fa"
-	compute_score "${DIR}/clustalo.fa"
-	compute_score "${DIR}/famsa.fa"
-	compute_score "${DIR}/muscle.fa"
-	compute_score "${DIR}/mafft.fa"
-	compute_score "${DIR}/caretta_results/result.fasta"
-	compute_score "${DIR}/mTM_result/result.fasta"
-	compute_score "${DIR}/matt/matt.fasta"
-	compute_score "${DIR}/mustang/mustang.afasta"
+	apply_fn compute_score
 fi
+
+# Compute NiRMSD with T-Coffee
+apply_fn compute_nirmsd
 
 # Find all msa2lddt HTML reports and extract LDDT scores
 find "$DIR" -mindepth 1 -maxdepth 1 -type f -name "*.html" -exec ./extractLDDT.awk {} \;
-
-# Get core (ungapped) LDDT scores
-# find "$DIR" -mindepth 1 -maxdepth 1 -type f -name "*.html" -exec ./getCoreLDDT.py {} \;
 
 # Get run times for each tool
 find "$DIR" -mindepth 1 -maxdepth 1 -type f -name "*.time" -exec ./extractTime.awk {} \;
