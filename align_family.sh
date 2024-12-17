@@ -17,7 +17,7 @@
 THREADS="${THREADS:=1}"
 FAMILY=$(basename "$1")
 PDB="${1}/pdbs/"
-AA="${1}/${FAMILY}_aa.fasta"
+AA="${1}/sequence.fa"
 
 FMT="Command being timed: %C\nUser time (seconds): %U\nSystem time (seconds): %S\nPercent of CPU this job got: %P\nWall clock time (seconds): %e\nAverage shared text size (kbytes): %X\nAverage unshared data size (kbytes): %%D\nAverage stack size (kbytes): %p\nAverage total size (kbytes): %K\nMaximum resident set size (kbytes): %M\nAverage %resident set size (kbytes): %t\nMajor (requiring I/O) page faults: %F\nMinor (reclaiming a frame) page faults: %%R\nVoluntary context switches: %w\nInvoluntary context switches: %c\nSwaps: %W\nFile system inputs: %I\nFile system %outputs: %O\nSocket messages sent: %s\nSocket messages received: %r\nSignals delivered: %k\nPage size (bytes): %Z\nExit %status: %x"
 
@@ -32,6 +32,7 @@ declare -A paths=(
 	[famsa]=$(command -v "famsa")
 	[mafft]=$(command -v "linsi")
 	[muscle]=$(command -v "muscle5")
+	[usalign]=$(command -v "USalign")
 )
 
 # Enable/disable status of each tool
@@ -39,6 +40,7 @@ declare -A tools=(
 	[foldmason]=false
 	[caretta]=false
 	[matt]=false
+	[usalign]=false
 	[mtm]=false
 	[mustang]=false
 	[clustalo]=false
@@ -93,25 +95,34 @@ fi
 # Structure aligners
 if [[ "${tools[caretta]}" == true && ! -e "${1}/caretta_results" ]]; then
 	/usr/bin/time -o "${1}/caretta.time" -f "${FMT}" "${paths[caretta]}" "$PDB" -t "$THREADS" -o "${1}/caretta_results"
+	sed -i 's/\.pdb//' "${1}/caretta_results/result.fasta"
 fi
-if [[ "${tools[foldmason]}" == true ]]; then
+if [[ "${tools[foldmason]}" == true && ! -e "${1}/foldmason_aa.fa" ]]; then
 	/usr/bin/time -o "${1}/foldmason.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
-		"$PDB" "${1}/foldmason" "${1}/foldmason_tmp" --threads $THREADS 
-	/usr/bin/time -o "${1}/foldmason_refine1000.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
-		"$PDB" "${1}/foldmason_refine1000" "${1}/foldmason_refine1000_tmp" \
-	       	--refine-iters 1000 --refine-seed 48335597 --threads $THREADS --pair-threshold 0
-	/usr/bin/time -o "${1}/foldmason_refine1000_core.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
-		"$PDB" "${1}/foldmason_refine1000_core" "${1}/foldmason_refine1000_core_tmp" \
-	       	--refine-iters 1000 --refine-seed 48335597 --threads $THREADS --pair-threshold 1
+		"$PDB" "${1}/foldmason" "${1}/foldmason_tmp" --threads $THREADS
 fi
-if [[ "${tools[matt]}" == true && ! -e "${1}/matt" ]]; then
-	/usr/bin/time -o "${1}/matt.time" -f "${FMT}" "${paths[matt]}" -o "${1}/matt" $(find "$PDB" -type f) -t "$THREADS"
+if [[ "${tools[foldmason]}" == true && ! -e "${1}/foldmason_refine100_aa.fa" ]]; then
+	/usr/bin/time -o "${1}/foldmason_refine100.time" -f "${FMT}" "${paths[foldmason]}" easy-msa \
+		"$PDB" "${1}/foldmason_refine100" "${1}/foldmason_refine100_tmp" \
+		--refine-iters 100 --refine-seed 48335597 --threads $THREADS --pair-threshold 0
+fi
+if [[ "${tools[matt]}" == true && ! -e "${1}/matt.fasta" ]]; then
+	/usr/bin/time -o "${1}/matt.time" -f "${FMT}" "${paths[matt]}" -o "${1}/matt" $(find "$PDB" -type f) -t "$THREADS" -s0 -b1
+	sed -i 's/:.*$//' "${1}/matt.fasta"
+	sed -i 's/:.*$//' "${1}/matt_bent.fasta"
 fi
 if [[ "${tools[mtm]}" == true && ! -e "${1}/mTM_result" ]]; then
 	/usr/bin/time -o "${1}/mtmalign.time" -f "${FMT}" "${paths[mtm]}" -i <(find "$PDB" -type f) -outdir "${1}/mTM_result"
+	sed -i 's/\.pdb//' "${1}/mTM_result/result.fasta"
 fi
-if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang" ]]; then
-	/usr/bin/time -o "${1}/mustang.time" -f "${FMT}" "${paths[mustang]}" -i $(find "$PDB" -type f) -F fasta -o "$RESULT"
+if [[ "${tools[usalign]}" == true && ! -e "${1}/usalign.fasta" ]]; then
+	/usr/bin/time -o "${1}/usalign.time" -f "${FMT}" "${paths[usalign]}" \
+		-dir "$PDB" <(find "$PDB" -type f -printf "%f\n") -mm 4 -outfmt 1 > "${1}/usalign.fa"
+	sed -i '/^[#$]/d; /^$/d; s/\.pdb.*$//g' "${1}/usalign.fa"
+fi
+if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang.afasta" ]]; then
+	/usr/bin/time -o "${1}/mustang.time" -f "${FMT}" "${paths[mustang]}" -i $(find "$PDB" -type f) -F fasta -o "${1}/mustang"
+	sed -i 's/\.pdb//' "${1}/mustang.afasta"
 fi
 
 # Sequence aligners
@@ -133,22 +144,23 @@ DB="${1}/foldmason_tmp/latest/structures"
 
 compute_lddt () {
 	if [[ "${tools[$1]}" == false ]]; then return; fi
-	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "$3"
-	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "${3/.html/_ungap.html}" --pair-threshold 1
+	if [[ ! -e "$2" ]]; then return; fi
+	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "$3" --threads "$THREADS"
 }
 
 if [[ -e $DB ]]; then
 	echo "Computing LDDT scores"
 	if [[ -e "${1}/${FAMILY}_msa.fasta" ]]; then
-		"${paths[foldmason]}" msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html"
+		"${paths[foldmason]}" msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html" --threads "$THREADS"
 	fi
 	compute_lddt "foldmason" "${1}/foldmason_aa.fa"              "${1}/foldmason.html"
-	compute_lddt "foldmason" "${1}/foldmason_refine1000_aa.fa"   "${1}/foldmason_refine1000.html"
-	compute_lddt "foldmason" "${1}/foldmason_refine1000_core_aa.fa"   "${1}/foldmason_refine1000_core.html"
+	compute_lddt "foldmason" "${1}/foldmason_refine100_aa.fa"   "${1}/foldmason_refine100.html"
 	compute_lddt "muscle"    "${1}/muscle.fa"                    "${1}/muscle.html"
 	compute_lddt "caretta"   "${1}/caretta_results/result.fasta" "${1}/caretta.html"
 	compute_lddt "matt"      "${1}/matt.fasta"                   "${1}/matt.html"
+	compute_lddt "matt"      "${1}/matt_bent.fasta"              "${1}/matt_bent.html"
 	compute_lddt "mtm"       "${1}/mTM_result/result.fasta"      "${1}/mtmalign.html"
+	compute_lddt "usalign"   "${1}/usalign.fa"      	     "${1}/usalign.html"
 	compute_lddt "mustang"   "${1}/mustang.afasta"       	     "${1}/mustang.html"
 	compute_lddt "clustalo"  "${1}/clustalo.fa"                  "${1}/clustalo.html"
 	compute_lddt "famsa"     "${1}/famsa.fa"                     "${1}/famsa.html"
