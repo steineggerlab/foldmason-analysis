@@ -21,21 +21,6 @@ compute_score () {
 		"$FAMILY" "$2" "$TC"
 }
 
-apply_fn() {
-	local func_name=$1
-	"$func_name" "${DIR}/foldmason_aa.fa" "foldmason"
-	"$func_name" "${DIR}/foldmason_refine100_aa.fa" "foldmason_refine100"
-	"$func_name" "${DIR}/clustalo.fa" "clustalo"
-	"$func_name" "${DIR}/famsa.fa" "famsa"
-	"$func_name" "${DIR}/muscle.fa" "muscle"
-	"$func_name" "${DIR}/mafft.fa" "mafft"
-	"$func_name" "${DIR}/caretta_results/result.fasta" "caretta"
-	"$func_name" "${DIR}/mTM_result/result.fasta" "mtmalign"
-	"$func_name" "${DIR}/usalign.fasta" "usalign"
-	"$func_name" "${DIR}/matt/matt.fasta" "matt"
-	"$func_name" "${DIR}/mustang/mustang.afasta" "mustang"
-}
-
 compute_nirmsd() {
 	PDB=$(realpath "${DIR}/pdbs")
 	TEMPLATE="${DIR}/nirmsd.template"
@@ -50,6 +35,9 @@ compute_nirmsd() {
 	if [ ! -e "$LOG" ]; then
 		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
 	fi
+	if grep -q "ERROR:" "$LOG" || grep -q "FATAL:T-COFFEE:" "$LOG"; then
+		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
+	fi
 
 	awk -v fam="$FAMILY" -v tool="$2" '
 		/TOTAL\s*APDB:/   {print fam "\t" tool "\tapdb\t" $3}
@@ -57,6 +45,23 @@ compute_nirmsd() {
 		/TOTAL\s*NiRMSD:/ {print fam "\t" tool "\tnirmsd\t" $3}
 	' "$LOG"
 }
+
+apply_fn() {
+	local func_name=$1
+	"$func_name" "${DIR}/foldmason_aa.fa" "foldmason"
+	"$func_name" "${DIR}/foldmason_refine100_aa.fa" "foldmason_refine100"
+	"$func_name" "${DIR}/clustalo.fa" "clustalo"
+	"$func_name" "${DIR}/famsa.fa" "famsa"
+	"$func_name" "${DIR}/muscle.fa" "muscle"
+	"$func_name" "${DIR}/mafft.fa" "mafft"
+	"$func_name" "${DIR}/caretta_results/result.fasta" "caretta"
+	"$func_name" "${DIR}/mTM_result/result.fasta" "mtmalign"
+	"$func_name" "${DIR}/usalign.fasta" "usalign"
+	"$func_name" "${DIR}/matt.fasta" "matt"
+	"$func_name" "${DIR}/mustang.afasta" "mustang"
+	"$func_name" "${DIR}/3dcoffee.fa" "3dcoffee"
+}
+
 
 # If the directory has a family_msa.fa, assume it is Homstrad and compute SP/TC/CS
 if [ -e "$REF" ]

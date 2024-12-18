@@ -33,6 +33,7 @@ declare -A paths=(
 	[mafft]=$(command -v "linsi")
 	[muscle]=$(command -v "muscle5")
 	[usalign]=$(command -v "USalign")
+	[tcoffee]=$(command -v "t_coffee")
 )
 
 # Enable/disable status of each tool
@@ -47,6 +48,7 @@ declare -A tools=(
 	[famsa]=false
 	[mafft]=false
 	[muscle]=false
+	[tcoffee]=false
 	[none]=false
 )
 
@@ -124,6 +126,14 @@ if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang.afasta" ]]; then
 	/usr/bin/time -o "${1}/mustang.time" -f "${FMT}" "${paths[mustang]}" -i $(find "$PDB" -type f) -F fasta -o "${1}/mustang"
 	sed -i 's/\.pdb//' "${1}/mustang.afasta"
 fi
+if [[ "${tools[tcoffee]}" == true && ! -e "${1}/3dcoffee.fa" ]]; then
+	/usr/bin/time -o "${1}/3dcoffee.time" -f "${FMT}" "${paths[tcoffee]}" "${1}/sequence.fa" \
+		-method sap_pair \
+		-template_file "${1}/nirmsd.template" \
+		-output fasta -outfile "${1}/3dcoffee.fa" \
+		-newtree "${1}/3dcoffee.tree"
+	sed -i 's/ _P_.*$//' "${1}/3dcoffee.fa"
+fi
 
 # Sequence aligners
 if [[ "${tools[clustalo]}" == true && ! -e "${1}/clustalo.fa" ]]; then
@@ -158,11 +168,11 @@ if [[ -e $DB ]]; then
 	compute_lddt "muscle"    "${1}/muscle.fa"                    "${1}/muscle.html"
 	compute_lddt "caretta"   "${1}/caretta_results/result.fasta" "${1}/caretta.html"
 	compute_lddt "matt"      "${1}/matt.fasta"                   "${1}/matt.html"
-	compute_lddt "matt"      "${1}/matt_bent.fasta"              "${1}/matt_bent.html"
 	compute_lddt "mtm"       "${1}/mTM_result/result.fasta"      "${1}/mtmalign.html"
 	compute_lddt "usalign"   "${1}/usalign.fa"      	     "${1}/usalign.html"
 	compute_lddt "mustang"   "${1}/mustang.afasta"       	     "${1}/mustang.html"
 	compute_lddt "clustalo"  "${1}/clustalo.fa"                  "${1}/clustalo.html"
 	compute_lddt "famsa"     "${1}/famsa.fa"                     "${1}/famsa.html"
 	compute_lddt "mafft"     "${1}/mafft.fa"                     "${1}/mafft.html"
+	compute_lddt "tcoffee"   "${1}/3dcoffee.fa"                  "${1}/3dcoffee.html"
 fi
