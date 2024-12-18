@@ -114,7 +114,7 @@ def main(folder_path, output_path):
         fp.write(records)
 
     # Filter out gaps for raw AA sequence
-    aa_output = output / f"{folder.stem}_aa.fasta"
+    aa_output = output / f"sequence.fa"
     print(f"Writing {aa_output}")
     with aa_output.open('w') as fp:
         records = "".join(f">{name}\n{sequence.replace('-', '')}\n" for name, sequence in zip(members, sequences))
