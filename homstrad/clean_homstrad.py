@@ -12,6 +12,17 @@ from pathlib import Path
 from collections import defaultdict
 
 
+# Where Homstrad PDB files do not match sequence in Homstrad MSA
+# 1ka5a (hpr)    Remove final K
+# 1pi2  (bowman) SR -> AA end of sequence
+# 1m85a (cat)    Remove final E
+replacements = {
+    "1ka5a": "MEQNSYVIIDETGIHARPATMLVQTASKFDSDIQLEYNGKKVNLKSIMGVMSLGVGKDAEITIYADGSDESDAIQAISDVLSKEGLT--",
+    "1pi2": "---YSKPCCDLCMCTRSMPPQCSCED-RINSCHSDCKSCMCTRSQPGQCRCLDTNDFCYKPCKAA--------",
+    "1m85a": "---------------------------------------------------KKLTTAAGAPVVDNNNVITAGPRGPMLLQDVWFLEKLAHFDREVIPERR-HAKGSGAFGTFTVTHDITKYTRAKIFSEVGKKTEMFARFSTVAGERGAADAERDIRGFALKFYTEEGNWDMVGNNTPVFYLRDPLKFPDLNHIVKRDPRTNM----RNMAYKWDFFSHLPESLHQLTIDMSDRGLPLSYRFVHGFGSHTYSFINKDNERFWVKFHFRCQQGIKNLMDDEAEALVGKDRESSQRDLFEAIERGDYPRWKLQIQIMPEKEASTVPYNPFDLTKVWPHADYPLMDVGYFELNRNPDNYFSDVEQAAFSPANIVPGISFSPDKMLQGRLFSYGDAHRYRL-GVNHHQIPVNAPK-CPFHNYHRDGAMRVDGNSGNGITYEPNS--GGVFQEQPDF------KEPPLSIEGAADHWNHREDEDYFSQPRALYE-LLSDDEHQRMFARIAGELSQA-SKETQQRQIDLFTKVHPEYGAGVEKAIKVL--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+}
+
+
 def main(folder_path, output_path):
     # Inputs
     folder = Path(folder_path)
@@ -38,9 +49,16 @@ def main(folder_path, output_path):
         text = fp.read()
     members = []
     sequences = []
-    for name, sequence in re.findall(r"^>.+?;(?P<name>.+?)$\nstructure[A-Z]?.+?$\n(?P<sequence>.+?)\*", text, re.MULTILINE | re.DOTALL):
+    for name, sequence in re.findall(
+        r"^>.+?;(?P<name>.+?)$\nstructure[A-Z]?.+?$\n(?P<sequence>.+?)\*",
+        text,
+        re.MULTILINE | re.DOTALL
+    ):
         members.append(name)
-        sequences.append(str(sequence).replace('\n', '').replace('/', '-'))
+        if name in replacements:
+            sequences.append(replacements[name])
+        else:
+            sequences.append(str(sequence).replace('\n', '').replace('/', '-'))
 
     # Read superposition PDB file
     with superposition.open() as fp:
@@ -53,9 +71,9 @@ def main(folder_path, output_path):
     remark = {
         chain: name
         for (name, chain) in
-        re.findall(r"^REMARK\s*(?P<name>\w+?)\s*chain\s*(?P<chain>[A-Z0-9]*)\s*?$", text, re.MULTILINE)
+        re.findall(r"^\s*?REMARK\s*(?P<name>\w+?)\s*chain\s*(?P<chain>[A-Z0-9]*)\s*?$", text, re.MULTILINE)
     }
-    
+
     # Split the superposed PDB into individual files
     # ATOM lines saved into explicitly mapped chain if remarks found,
     # otherwise just following .ali file order
