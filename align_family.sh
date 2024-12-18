@@ -131,7 +131,7 @@ if [[ "${tools[tcoffee]}" == true && ! -e "${1}/3dcoffee.fa" ]]; then
 		-method sap_pair \
 		-template_file "${1}/nirmsd.template" \
 		-output fasta -outfile "${1}/3dcoffee.fa" \
-		-newtree "${1}/3dcoffee.tree"
+		-newtree "${1}/3dcoffee.tree"  # otherwise all guide trees are saved to root
 	sed -i 's/ _P_.*$//' "${1}/3dcoffee.fa"
 fi
 

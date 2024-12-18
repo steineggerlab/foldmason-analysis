@@ -47,8 +47,7 @@ SCORE_THREADS="${SCORE_THREADS:=1}"
 
 # Run all aligners on families in $1
 find $1 -mindepth 1 -maxdepth 1 -type d |\
-	awk 'NR > 798' |\
-	THREADS="$TOOL_THREADS" xargs -I{} -P"$RUN_THREADS" ./align_family.sh {} foldmason
+	THREADS="$TOOL_THREADS" xargs -I{} -P"$RUN_THREADS" ./align_family.sh {}
 
 # Get scores per tool
 find $1 -mindepth 1 -maxdepth 1 -type d |\
