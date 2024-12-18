@@ -127,7 +127,7 @@ if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang.afasta" ]]; then
 	sed -i 's/\.pdb//' "${1}/mustang.afasta"
 fi
 if [[ "${tools[tcoffee]}" == true && ! -e "${1}/3dcoffee.fa" ]]; then
-	/usr/bin/time -o "${1}/3dcoffee.time" -f "${FMT}" "${paths[tcoffee]}" "${1}/sequence.fa" \
+	/usr/bin/time -o "${1}/3dcoffee.time" -f "${FMT}" "${paths[tcoffee]}" "$AA" \
 		-method sap_pair \
 		-template_file "${1}/nirmsd.template" \
 		-output fasta -outfile "${1}/3dcoffee.fa" \
