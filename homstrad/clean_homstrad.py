@@ -22,6 +22,13 @@ replacements = {
     "1m85a": "---------------------------------------------------KKLTTAAGAPVVDNNNVITAGPRGPMLLQDVWFLEKLAHFDREVIPERR-HAKGSGAFGTFTVTHDITKYTRAKIFSEVGKKTEMFARFSTVAGERGAADAERDIRGFALKFYTEEGNWDMVGNNTPVFYLRDPLKFPDLNHIVKRDPRTNM----RNMAYKWDFFSHLPESLHQLTIDMSDRGLPLSYRFVHGFGSHTYSFINKDNERFWVKFHFRCQQGIKNLMDDEAEALVGKDRESSQRDLFEAIERGDYPRWKLQIQIMPEKEASTVPYNPFDLTKVWPHADYPLMDVGYFELNRNPDNYFSDVEQAAFSPANIVPGISFSPDKMLQGRLFSYGDAHRYRL-GVNHHQIPVNAPK-CPFHNYHRDGAMRVDGNSGNGITYEPNS--GGVFQEQPDF------KEPPLSIEGAADHWNHREDEDYFSQPRALYE-LLSDDEHQRMFARIAGELSQA-SKETQQRQIDLFTKVHPEYGAGVEKAIKVL--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
 }
 
+amino_acid_map = {
+    'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'C': 'CYS',
+    'E': 'GLU', 'Q': 'GLN', 'G': 'GLY', 'H': 'HIS', 'I': 'ILE',
+    'L': 'LEU', 'K': 'LYS', 'M': 'MET', 'F': 'PHE', 'P': 'PRO',
+    'S': 'SER', 'T': 'THR', 'W': 'TRP', 'Y': 'TYR', 'V': 'VAL',
+    'B': 'ASX', 'Z': 'GLX', 'X': 'XAA', '-': '---'
+}
 
 def main(folder_path, output_path):
     # Inputs
@@ -81,7 +88,7 @@ def main(folder_path, output_path):
     last_chain = None
     last_residue = None
     chain_index = 0
-    residue_index = 0
+    residue_index = 1
     name = ""
     for line in text.split('\n'):
         if line.startswith("ATOM"):
@@ -93,10 +100,21 @@ def main(folder_path, output_path):
             if chain != last_chain:
                 name = remark.get(chain, members[chain_index])
                 chain_index += 1
-                residue_index = 0
+                residue_index = 1
                 last_chain = chain
             line = line[0:22] + f"{residue_index:-4}" + line[26:] + '\n'
             single_pdbs[name] += line
+
+
+    # SEQRES lines
+    for name, sequence in zip(members, sequences):
+        three = [amino_acid_map.get(r, 'UNK') for r in sequence.replace('-', '')]
+        lines = [three[i:i + 13] for i in range(0, len(three), 13)]
+        seqres = [
+            f"SEQRES {idx:>3}{single_pdbs[name][21]:>2} {len(three):>4}  " + " ".join(residues)
+            for idx, residues in enumerate(lines, start=1)
+        ]
+        single_pdbs[name] = "\n".join(seqres) + "\n" + single_pdbs[name]
 
     # Write out member.pdb files into output folder
     for member in members:
@@ -104,7 +122,7 @@ def main(folder_path, output_path):
         pdb = output_pdbs / f"{member}.pdb"
         print(f"Writing {pdb}")
         with pdb.open('w') as fp:
-            fp.write(single_pdbs[member])
+            fp.write(single_pdbs[member] + '\n')
 
     # Write Homstrad MSA as clean FASTA file
     msa_output = output / f"{folder.stem}_msa.fasta"
@@ -119,6 +137,15 @@ def main(folder_path, output_path):
     with aa_output.open('w') as fp:
         records = "".join(f">{name}\n{sequence.replace('-', '')}\n" for name, sequence in zip(members, sequences))
         fp.write(records)
+
+    tmp_output = output / f"template.txt"
+    print(f"Writing {tmp_output}")
+    with tmp_output.open('w') as fp:
+        records = []
+        for member in members:
+            pdb = (output_pdbs / f"{member}.pdb").resolve()
+            records.append(f">{member} _P_ {pdb}")
+        fp.write("\n".join(records))
 
 
 if __name__ == "__main__":
