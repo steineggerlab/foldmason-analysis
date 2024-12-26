@@ -1,11 +1,15 @@
 #!/bin/bash -e
 
+export MAX_N_PID_4_TCOFFEE=$(cat /proc/sys/kernel/pid_max)
+
 # Compute SP/TC/CS scores and extract LDDT/runtime per tool
 # ./compute_scores.sh family/ >> scores.tsv
 
 DIR="$1"
 FAMILY=$(basename "$DIR")
 REF="${DIR}/${FAMILY}_msa.fasta"
+AA="${DIR}/sequence.fa"
+PDB=$(realpath "${DIR}/pdbs")
 
 # 4 column TSV family, tool, type (sp_fwd/sp_rev/tc/cs), score
 compute_score () {
@@ -22,23 +26,19 @@ compute_score () {
 }
 
 compute_nirmsd() {
-	PDB=$(realpath "${DIR}/pdbs")
-	TEMPLATE="${DIR}/nirmsd.template"
+	TEMPLATE="${DIR}/tcoffee.template"
 	LOG="${DIR}/${2}_nirmsd.log"
-
 	if [ ! -e "$TEMPLATE" ]; then
-		awk -v fo="$PDB" \
+		awk -v fo=$(realpath "$PDB") \
 			'/^>/ { header=$1; sub(/^>/, "", header); print $1" _P_ "fo"/"header".pdb" }' \
-			"${DIR}/sequence.fa" > "${DIR}/nirmsd.template"
+			"$AA" > "$TEMPLATE"
 	fi
-
 	if [ ! -e "$LOG" ]; then
 		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
 	fi
 	if grep -q "ERROR:" "$LOG" || grep -q "FATAL:T-COFFEE:" "$LOG"; then
 		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
 	fi
-
 	awk -v fam="$FAMILY" -v tool="$2" '
 		/TOTAL\s*APDB:/   {print fam "\t" tool "\tapdb\t" $3}
 		/TOTAL\s*iRMSD:/  {print fam "\t" tool "\tirmsd\t" $3}

@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+export MAX_N_PID_4_TCOFFEE=$(cat /proc/sys/kernel/pid_max)
+
 # ./align_family.sh folder/ <optional: tool1 tool2 ...>
 #
 # Run tool suite on a given cluster folder.
@@ -16,8 +18,9 @@
 
 THREADS="${THREADS:=1}"
 FAMILY=$(basename "$1")
-PDB="${1}/pdbs/"
+PDB=$(realpath "${1}/pdbs/")
 AA="${1}/sequence.fa"
+TEMPLATE="${1}/tcoffee.template"
 
 FMT="Command being timed: %C\nUser time (seconds): %U\nSystem time (seconds): %S\nPercent of CPU this job got: %P\nWall clock time (seconds): %e\nAverage shared text size (kbytes): %X\nAverage unshared data size (kbytes): %%D\nAverage stack size (kbytes): %p\nAverage total size (kbytes): %K\nMaximum resident set size (kbytes): %M\nAverage %resident set size (kbytes): %t\nMajor (requiring I/O) page faults: %F\nMinor (reclaiming a frame) page faults: %%R\nVoluntary context switches: %w\nInvoluntary context switches: %c\nSwaps: %W\nFile system inputs: %I\nFile system %outputs: %O\nSocket messages sent: %s\nSocket messages received: %r\nSignals delivered: %k\nPage size (bytes): %Z\nExit %status: %x"
 
@@ -127,10 +130,16 @@ if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang.afasta" ]]; then
 	sed -i 's/\.pdb//' "${1}/mustang.afasta"
 fi
 if [[ "${tools[tcoffee]}" == true && ! -e "${1}/3dcoffee.fa" ]]; then
+	if [ ! -e "$TEMPLATE" ]; then
+		awk -v fo=$(realpath "$PDB") '/^>/ { header=$1; sub(/^>/, "", header); print $1" _P_ "fo"/"header".pdb" }' "$AA" > "$TEMPLATE"
+	fi
 	/usr/bin/time -o "${1}/3dcoffee.time" -f "${FMT}" "${paths[tcoffee]}" "$AA" \
 		-method sap_pair \
-		-template_file "${1}/nirmsd.template" \
-		-output fasta -outfile "${1}/3dcoffee.fa" \
+		-thread 1 \
+		-template_file "$TEMPLATE" \
+		-output fasta \
+		-outfile "${1}/3dcoffee.fa" \
+		-quiet "${1}/3dcoffee.log" \
 		-newtree "${1}/3dcoffee.tree"  # otherwise all guide trees are saved to root
 	sed -i 's/ _P_.*$//' "${1}/3dcoffee.fa"
 fi
