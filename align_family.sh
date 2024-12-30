@@ -98,8 +98,11 @@ if [[ "${tools[none]}" == false ]]; then
 fi
 
 # Structure aligners
-if [[ "${tools[caretta]}" == true && ! -e "${1}/caretta_results" ]]; then
-	/usr/bin/time -o "${1}/caretta.time" -f "${FMT}" "${paths[caretta]}" "$PDB" -t "$THREADS" -o "${1}/caretta_results"
+if [[ "${tools[caretta]}" == true && ! -e "${1}/caretta_results/result.fasta" ]]; then
+	if [[ -e "${1}/caretta_results" ]]; then
+		rm -r "${1}/caretta_results"
+	fi
+	/usr/bin/time -o "${1}/caretta.time" -f "${FMT}" "${paths[caretta]}" "$PDB" -t "$THREADS" -o "${1}/caretta_results" --
 	sed -i 's/\.pdb//' "${1}/caretta_results/result.fasta"
 fi
 if [[ "${tools[foldmason]}" == true && ! -e "${1}/foldmason_aa.fa" ]]; then
@@ -116,14 +119,14 @@ if [[ "${tools[matt]}" == true && ! -e "${1}/matt.fasta" ]]; then
 	sed -i 's/:.*$//' "${1}/matt.fasta"
 	sed -i 's/:.*$//' "${1}/matt_bent.fasta"
 fi
-if [[ "${tools[mtm]}" == true && ! -e "${1}/mTM_result" ]]; then
+if [[ "${tools[mtm]}" == true && ! -e "${1}/mTM_result/result.fasta" ]]; then
 	/usr/bin/time -o "${1}/mtmalign.time" -f "${FMT}" "${paths[mtm]}" -i <(find "$PDB" -type f) -outdir "${1}/mTM_result"
 	sed -i 's/\.pdb//' "${1}/mTM_result/result.fasta"
 fi
-if [[ "${tools[usalign]}" == true && ! -e "${1}/usalign.fasta" ]]; then
+if [[ "${tools[usalign]}" == true && ! -e "${1}/usalign.fa" ]]; then
 	/usr/bin/time -o "${1}/usalign.time" -f "${FMT}" "${paths[usalign]}" \
 		-dir "$PDB" <(find "$PDB" -type f -printf "%f\n") -mm 4 -outfmt 1 > "${1}/usalign.fa"
-	sed -i '/^[#$]/d; /^$/d; s/\.pdb.*$//g' "${1}/usalign.fa"
+	sed -i '/^[#$]/d; /^$/d; s/\.pdb.*$//g; s/^>\//>/' "${1}/usalign.fa"
 fi
 if [[ "${tools[mustang]}" == true && ! -e "${1}/mustang.afasta" ]]; then
 	/usr/bin/time -o "${1}/mustang.time" -f "${FMT}" "${paths[mustang]}" -i $(find "$PDB" -type f) -F fasta -o "${1}/mustang"
@@ -164,16 +167,17 @@ DB="${1}/foldmason_tmp/latest/structures"
 compute_lddt () {
 	if [[ "${tools[$1]}" == false ]]; then return; fi
 	if [[ ! -e "$2" ]]; then return; fi
+	if [[ -e "$3" ]]; then return; fi
 	"${paths[foldmason]}" msa2lddtreport "$DB" "$2" "$3" --threads "$THREADS"
 }
 
 if [[ -e $DB ]]; then
-	echo "Computing LDDT scores"
+	#echo "Computing LDDT scores"
 	if [[ -e "${1}/${FAMILY}_msa.fasta" ]]; then
-		"${paths[foldmason]}" msa2lddtreport "$DB" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html" --threads "$THREADS"
+		compute_lddt "homstrad" "${1}/${FAMILY}_msa.fasta" "${1}/homstrad.html"
 	fi
 	compute_lddt "foldmason" "${1}/foldmason_aa.fa"              "${1}/foldmason.html"
-	compute_lddt "foldmason" "${1}/foldmason_refine100_aa.fa"   "${1}/foldmason_refine100.html"
+	compute_lddt "foldmason" "${1}/foldmason_refine100_aa.fa"    "${1}/foldmason_refine100.html"
 	compute_lddt "muscle"    "${1}/muscle.fa"                    "${1}/muscle.html"
 	compute_lddt "caretta"   "${1}/caretta_results/result.fasta" "${1}/caretta.html"
 	compute_lddt "matt"      "${1}/matt.fasta"                   "${1}/matt.html"
