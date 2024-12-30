@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+export MAX_N_PID_4_TCOFFEE=$(cat /proc/sys/kernel/pid_max)
+
 # Runs all tools then evaluates LDDT and SoP/TC/CS
 #
 # ./align_families.sh families/ scores.tsv
@@ -46,10 +48,37 @@ RUN_THREADS="${RUN_THREADS:=1}"
 SCORE_THREADS="${SCORE_THREADS:=1}"
 
 # Run all aligners on families in $1
+echo "Running aligners"
 find $1 -mindepth 1 -maxdepth 1 -type d |\
 	THREADS="$TOOL_THREADS" xargs -I{} -P"$RUN_THREADS" ./align_family.sh {}
 
+DIR="$1"
+N=$(find $1 -mindepth 1 -maxdepth 1 -type d | wc -l)
+
+check_msas() {
+	cnt=$(find "$DIR" -type f -path "*/${1}" | wc -l)
+	if [ ! $cnt -eq $N ]; then
+		echo "Missing ${1}, ${cnt}/${N}"
+		exit 1
+	fi
+}
+
+echo "Checking all MSAs have been generated"
+check_msas "foldmason_aa.fa"
+check_msas "foldmason_refine100_aa.fa"
+check_msas "clustalo.fa"
+check_msas "famsa.fa"
+check_msas "muscle.fa"
+check_msas "mafft.fa"
+check_msas "caretta_results/result.fasta"
+check_msas "mTM_result/result.fasta"
+check_msas "usalign.fa"
+check_msas "matt.fasta"
+check_msas "mustang.afasta"
+check_msas "3dcoffee.fa"
+
 # Get scores per tool
+echo "Computing scores"
 find $1 -mindepth 1 -maxdepth 1 -type d |\
 	xargs -I{} -P"$SCORE_THREADS" ./compute_scores.sh {} |\
        	sort > "$2"
