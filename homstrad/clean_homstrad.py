@@ -52,16 +52,20 @@ def main(folder_path, output_path):
 
     # Get family members directly from .ali file
     # Matches blocks from > up until sequence terminating *
+    # Grabs chain from header line. If empty or non-alphanumeric character, saves 'A'
     with alignment.open() as fp:
         text = fp.read()
     members = []
     sequences = []
-    for name, sequence in re.findall(
-        r"^>.+?;(?P<name>.+?)$\nstructure[A-Z]?.+?$\n(?P<sequence>.+?)\*",
+    chain_names = []
+    for name, chain, sequence in re.findall(
+        #r"^>.+?;(?P<name>.+?)$\nstructure[A-Z]?.+?$\n(?P<sequence>.+?)\*",
+        r"^>.+?;(?P<name>.+?)$\n^.+?:.+?:.+?:(?P<chain>.+?):.+?$\n(?P<sequence>.+?)\*",
         text,
         re.MULTILINE | re.DOTALL
     ):
         members.append(name)
+        chain_names.append(chain if chain.isalnum() else 'A')
         if name in replacements:
             sequences.append(replacements[name])
         else:
@@ -88,6 +92,7 @@ def main(folder_path, output_path):
     last_chain = None
     last_residue = None
     chain_index = 0
+    chain_ = chain_names[0]
     residue_index = 1
     name = ""
     for line in text.split('\n'):
@@ -99,19 +104,20 @@ def main(folder_path, output_path):
                 last_residue = residue
             if chain != last_chain:
                 name = remark.get(chain, members[chain_index])
+                chain_ = chain_names[chain_index]
                 chain_index += 1
                 residue_index = 1
                 last_chain = chain
-            line = line[0:22] + f"{residue_index:-4}" + line[26:] + '\n'
+            line = line[0:21] + chain_ + f" {residue_index:-3}" + line[26:] + '\n'
             single_pdbs[name] += line
 
 
     # SEQRES lines
-    for name, sequence in zip(members, sequences):
+    for name, chain, sequence in zip(members, chain_names, sequences):
         three = [amino_acid_map.get(r, 'UNK') for r in sequence.replace('-', '')]
         lines = [three[i:i + 13] for i in range(0, len(three), 13)]
         seqres = [
-            f"SEQRES {idx:>3}{single_pdbs[name][21]:>2} {len(three):>4}  " + " ".join(residues)
+            f"SEQRES {idx:>3}{chain:>2} {len(three):>4}  " + " ".join(residues)
             for idx, residues in enumerate(lines, start=1)
         ]
         single_pdbs[name] = "\n".join(seqres) + "\n" + single_pdbs[name]
