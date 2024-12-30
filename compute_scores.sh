@@ -26,6 +26,7 @@ compute_score () {
 }
 
 compute_nirmsd() {
+	if [ ! -e "$1" ]; then return; fi
 	TEMPLATE="${DIR}/tcoffee.template"
 	LOG="${DIR}/${2}_nirmsd.log"
 	if [ ! -e "$TEMPLATE" ]; then
@@ -34,10 +35,10 @@ compute_nirmsd() {
 			"$AA" > "$TEMPLATE"
 	fi
 	if [ ! -e "$LOG" ]; then
-		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
+		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" -quiet /dev/null > "$LOG"
 	fi
 	if grep -q "ERROR:" "$LOG" || grep -q "FATAL:T-COFFEE:" "$LOG"; then
-		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" &> "$LOG"
+		t_coffee -other_pg irmsd "$1" -template_file "$TEMPLATE" -quiet /dev/null > "$LOG"
 	fi
 	awk -v fam="$FAMILY" -v tool="$2" '
 		/TOTAL\s*APDB:/   {print fam "\t" tool "\tapdb\t" $3}
@@ -56,7 +57,7 @@ apply_fn() {
 	"$func_name" "${DIR}/mafft.fa" "mafft"
 	"$func_name" "${DIR}/caretta_results/result.fasta" "caretta"
 	"$func_name" "${DIR}/mTM_result/result.fasta" "mtmalign"
-	"$func_name" "${DIR}/usalign.fasta" "usalign"
+	"$func_name" "${DIR}/usalign.fa" "usalign"
 	"$func_name" "${DIR}/matt.fasta" "matt"
 	"$func_name" "${DIR}/mustang.afasta" "mustang"
 	"$func_name" "${DIR}/3dcoffee.fa" "3dcoffee"
@@ -66,7 +67,8 @@ apply_fn() {
 # If the directory has a family_msa.fa, assume it is Homstrad and compute SP/TC/CS
 if [ -e "$REF" ]
 then
-	apply_fn compute_score
+       apply_fn compute_score
+       compute_nirmsd "$REF" "homstrad" 
 fi
 
 # Compute NiRMSD with T-Coffee
