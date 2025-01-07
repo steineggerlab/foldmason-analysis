@@ -72,7 +72,7 @@ sequence_tools = c("Clustal Omega", "MUSCLE", "MAFFT", "FAMSA")
 # Panel 1: Homstrad
 homstrad = new.env()
 homstrad.data <- read.delim(
-  paste(BASEDIR, "homstrad_scores.tsv", sep=""),
+  paste(BASEDIR, "data/homstrad_scores.tsv", sep=""),
   sep="\t",
   header = F,
   col.names = c("family", "tool", "type", "score"),
@@ -83,7 +83,7 @@ homstrad.data <- read.delim(
   )
 
 homstrad.counts <- read.delim(
-  "~/repos/foldmason-analysis/homstrad_families.tsv",
+  paste(BASEDIR, "data/homstrad_families.tsv", sep=""),
   sep="\t",
   header=F,
   col.names=c("family", "count")
@@ -118,7 +118,7 @@ homstrad.plot <- ggplot(homstrad.sop_scores) +
 
 homstrad.plot
 
-ggsave(file=paste(BASEDIR, "homstrad_sop_plot.pdf", sep=""), units="mm", width=100, height=100, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/homstrad_sop_plot.pdf", sep=""), units="mm", width=100, height=100, dpi=300, bg="white")
 
 # F1 scores
 homstrad.sop_scores %>%
@@ -142,7 +142,7 @@ ggplot(
   common_theme +
   theme(axis.text.x=element_text(angle=90, vjust=.5, hjust=1))
 
-ggsave(file=paste(BASEDIR, "homstrad_all_metrics.pdf", sep=""), units="mm", width=300, height=300, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/homstrad_all_metrics.pdf", sep=""), units="mm", width=300, height=300, dpi=300, bg="white")
 
 # LDDT vs SoP/TC/CS reference-based scores on HOMSTRAD alignments
 homstrad.wide <- homstrad.data %>%
@@ -196,7 +196,7 @@ ggplot(homstrad.longer) +
     strip.text = element_text(size=7)
   )
 
-ggsave(file="~/repos/foldmason-analysis/homstrad_correlations.pdf", units="mm", width=300, height=150, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.pdf", sep=""), units="mm", width=300, height=150, dpi=300, bg="white")
 
 
 # Panel 2: 1000 AFDB Clusters
@@ -204,7 +204,7 @@ ggsave(file="~/repos/foldmason-analysis/homstrad_correlations.pdf", units="mm", 
 # Read in long form score data
 afdb = new.env()
 afdb.data_base <- read.delim(
-  paste(BASEDIR, "afdb_scores.tsv", sep=""),
+  paste(BASEDIR, "data/afdb_scores.tsv", sep=""),
   sep="\t",
   header=FALSE,
   col.names=c("family", "tool", "type", "score")
@@ -219,7 +219,7 @@ afdb.data_base <- read.delim(
 # Cluster statistics
 # need num_domains
 afdb.family_data <- read.delim(
-  paste(BASEDIR, "afdb_families.tsv", sep=""),
+  paste(BASEDIR, "data/afdb_families.tsv", sep=""),
   sep="\t",
   header=FALSE,
   col.names=c("rep_accession", "domains", "num_members", "num_domains", "member_accessions")
@@ -380,7 +380,7 @@ afdb.plot_a + afdb.plot_b
 # Panel 3: Speed benchmark
 speed = new.env()
 speed.times <- read.delim(
-  paste(BASEDIR, "scaling_times.tsv", sep=""),
+  paste(BASEDIR, "data/scaling_times.tsv", sep=""),
   sep="\t",
   header=FALSE,
   col.names=c("subset", "tool", "time")
@@ -442,8 +442,8 @@ homstrad.plot + (afdb.plot_a + afdb.plot_b + plot_layout(axes="collect_y", tag_l
 
 # device=svg is required for correct import into figma, converts text to paths though
 # svglite preserves text but has weirdness with path stroke/fill when imported into figma
-ggsave(file=paste(BASEDIR, "benchmarks.pdf", sep=""), units="mm", width=160, height=60, dpi=300, bg="white")
-ggsave(file=paste(BASEDIR, "benchmarks.svg", sep=""), device=svg, units="mm", width=160, height=60, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/benchmarks.pdf", sep=""), units="mm", width=160, height=60, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/benchmarks.svg", sep=""), device=svg, units="mm", width=160, height=60, dpi=300, bg="white")
 
 
 # Plot PDB protein size vs Homstrad
