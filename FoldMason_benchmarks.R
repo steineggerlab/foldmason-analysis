@@ -1,10 +1,12 @@
 # Make plots for FoldMason manuscript
-# Requires TSVs:
-# - Homstrad scores - family/tool/score type/score
-# - Homstrad family stats - family/member count
-# - AFDB cluster scores - family/tool/score type/score
-# - AFDB cluster family stats - family/CATH domains/total cluster member count/domain count/20 members analysed
-# - AFDB scaling benchmark times - family/subset/time
+# Requires TSVs in data/:
+# - homstrad_scores.tsv   - family/tool/score type/score
+# - homstrad_families.tsv - family/member count
+# - afdb_scores.tsv       - family/tool/score type/score
+# - afdb_families.tsv     - family/CATH domains/total cluster member count/domain count/20 members analysed
+# - scaling_times.tsv     - subset/tool/time
+# - homstrad_lengths.csv  - protein/length
+# - pdb_protein_sizes.csv - bin/count
 
 library(ggplot2)
 library(tidyr)
