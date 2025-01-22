@@ -3,6 +3,7 @@
 
 library(Quartet)
 library(ape)
+library(phangorn)
 library(dplyr)
 library(tidyr)
 library(ggtree)
@@ -223,3 +224,80 @@ e_col_label + e1_col_label + e2_col_label +
 ggsave(paste(BASEDIR, "glycoproteins/trees.pdf", sep=""), units="mm", width=160, height=200, dpi=300)
 ggsave(paste(BASEDIR, "glycoproteins/trees.svg", sep=""), device=svg, units="mm", width=160, height=200, dpi=300)
 ggsave(paste(BASEDIR, "glycoproteins/trees.png", sep=""), units="mm", width=160, height=200, dpi=300, bg="white")
+
+
+# Calculating mean bootstrap support of trees
+
+find_matching_nodes <- function(tree1, tree2) {
+  if (!setequal(tree1$tip.label, tree2$tip.label)) {
+    stop("The trees do not have the same set of taxa.")
+  }
+  tree1_node_labels <- sapply(1:tree1$Nnode, function(i) {
+    sort(tree1$tip.label[Descendants(tree1, i + length(tree1$tip.label), type = "tips")[[1]]])
+  })
+  tree2_node_labels <- sapply(1:tree2$Nnode, function(i) {
+    sort(tree2$tip.label[Descendants(tree2, i + length(tree2$tip.label), type = "tips")[[1]]])
+  })
+  matching_nodes <- which(sapply(tree1_node_labels, function(node1) {
+    any(sapply(tree2_node_labels, function(node2) identical(node1, node2)))
+  }))
+  matching_nodes_info <- data.frame(
+    Tree1_Node = numeric(0),
+    Tree1_Bootstrap = numeric(0),
+    Tree2_Node = numeric(0),
+    Tree2_Bootstrap = numeric(0)
+  )
+  for (node1 in matching_nodes) {
+    node1_label <- tree1_node_labels[[node1]]
+    node2 <- which(sapply(tree2_node_labels, function(node2) identical(node1_label, node2)))
+    if (length(node2) > 0) {
+      node2 <- node2[1]
+      bootstrap1 <- tree1$node.label[node1]
+      bootstrap2 <- tree2$node.label[node2]
+      matching_nodes_info <- rbind(matching_nodes_info, data.frame(
+        Tree1_Node = node1,
+        Tree1_Bootstrap = as.numeric(bootstrap1),
+        Tree2_Node = node2,
+        Tree2_Bootstrap = as.numeric(bootstrap2)
+      ))
+    }
+  }
+  return(matching_nodes_info)
+}
+
+calculate_mean_tree_support <- function(tree) {
+  values <- sapply(1:tree$Nnode, function(i) {
+    return(as.numeric(tree$node.label[i]))
+  })
+  return(mean(values, na.rm=T)) 
+}
+
+calculate_matching_node_stats <- function(a, b) {
+  matchingNodes <- find_matching_nodes(a, b) %>%
+    mutate(difference = Tree1_Bootstrap - Tree2_Bootstrap)
+  stats <- data.frame(
+    Mean_Tree1_Bootstrap = calculate_mean_tree_support(a),
+    Mean_Tree2_Bootstrap = calculate_mean_tree_support(b),
+    Mean_Matched_Tree1_Bootstrap = mean(matchingNodes$Tree1_Bootstrap, na.rm = TRUE),
+    Mean_Matched_Tree2_Bootstrap = mean(matchingNodes$Tree2_Bootstrap, na.rm = TRUE),
+    Mean_Difference = mean(matchingNodes$difference, na.rm = TRUE),
+    Total_Nodes = Nnode(a),
+    Total_Matching_Nodes = count(matchingNodes),
+    Total_Difference_Positive = sum(matchingNodes$difference > 0, na.rm = TRUE),
+    Total_Difference_Negative = sum(matchingNodes$difference < 0, na.rm = TRUE),
+    Total_Difference_Zero = sum(matchingNodes$difference == 0, na.rm = TRUE)
+  )
+  return(stats)
+}
+
+node_stats <- rbind(
+  calculate_matching_node_stats(f_e_concat, m_e) %>% mutate(tree="E", tree_method="concat"),
+  calculate_matching_node_stats(f_e1_concat, m_e1) %>% mutate(tree="E1", tree_method="concat"),
+  calculate_matching_node_stats(f_e2_concat, m_e2) %>% mutate(tree="E2", tree_method="concat"),
+  calculate_matching_node_stats(f_e_aa, m_e) %>% mutate(tree="E", tree_method="aa"),
+  calculate_matching_node_stats(f_e1_aa, m_e1) %>% mutate(tree="E1", tree_method="aa"),
+  calculate_matching_node_stats(f_e2_aa, m_e2) %>% mutate(tree="E2", tree_method="aa"),
+  calculate_matching_node_stats(f_e_3di, m_e) %>% mutate(tree="E", tree_method="3di"),
+  calculate_matching_node_stats(f_e1_3di, m_e1) %>% mutate(tree="E1", tree_method="3di"),
+  calculate_matching_node_stats(f_e2_3di, m_e2) %>% mutate(tree="E2", tree_method="3di")
+)
