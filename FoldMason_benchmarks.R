@@ -17,7 +17,7 @@ library(scales)
 library(svglite)
 library(patchwork)
 
-BASEDIR="./"
+BASEDIR="./foldmason-analysis/"
 
 name_map <- c(
   matt = "Matt",
@@ -33,7 +33,14 @@ name_map <- c(
   "3dcoffee" = "3D-Coffee",
   foldmason = "FoldMason",
   foldmason_refine100 = "FoldMason R100",
-  homstrad = "HOMSTRAD"
+  homstrad = "HOMSTRAD",
+  "foldseek" = "Foldseek",
+  "foldseektm" = "Foldseek-TM",
+  "clesw" = "CLE-SW",
+  "ce" = "CE",
+  "dali" = "DALI",
+  "tmalign" = "TM-align",
+  "mmseqs" = "MMseqs2"
 )
 
 colour_map <- c(
@@ -68,7 +75,8 @@ common_theme <- theme_bw(base_family="Helvetica", base_size=7) + theme(
   legend.box.margin = margin(0, 0, 0, 0), # Minimize box margin  
 )
 
-structure_tools = c("mTM-align", "MUSTANG", "Matt", "Caretta", "FoldMason", "FoldMason R100", "US-align", "3D-Coffee")
+structure_tools = c("mTM-align", "MUSTANG", "Matt", "Caretta",
+                    "FoldMason", "FoldMason New", "FoldMason New R1000", "FoldMason FWBW", "FoldMason FWBW R1000", "FoldMason R100", "US-align", "3D-Coffee")
 sequence_tools = c("Clustal Omega", "MUSCLE", "MAFFT", "FAMSA")
 
 # Panel 1: Homstrad
@@ -96,12 +104,14 @@ homstrad.counts <- read.delim(
 # Pairs from test MSA in reference MSA (accuracy)
 homstrad.sop_scores <- homstrad.data %>%
   left_join(homstrad.counts, by=join_by(family)) %>% 
-  filter(count > 2 & startsWith(type, "sp_") & tool != "Homstrad") %>%
+  filter(count >= 2 & startsWith(type, "sp_") & tool != "Homstrad") %>%
   mutate(score=as.numeric(score)) %>%
   group_by(tool, type, base) %>%
   summarise(mean=mean(score), sd=sd(score), .groups="drop") %>%
   pivot_wider(names_from=type, values_from=c(mean, sd), names_sep="_") %>%
   mutate(f1 = 2 * (mean_sp_fwd * mean_sp_rev) / (mean_sp_fwd + mean_sp_rev))
+
+homstrad.sop_scores %>% arrange(desc(f1))
 
 homstrad.plot <- ggplot(homstrad.sop_scores) +
   aes(y=mean_sp_fwd, x=mean_sp_rev, colour=tool, shape=base) +
@@ -112,8 +122,6 @@ homstrad.plot <- ggplot(homstrad.sop_scores) +
   guides(
     shape="none",
     color="none"
-    # shape=guide_legend(nrow=4),
-    # color=guide_legend(nrow=4)
   ) +
   labs(x="Sensitivity (%)", y="Specificity (%)", colour="Tool", shape="Input type", tag="i)") +
   common_theme
@@ -124,8 +132,12 @@ ggsave(file=paste(BASEDIR, "figures/homstrad_sop_plot.pdf", sep=""), units="mm",
 
 # F1 scores
 homstrad.sop_scores %>%
+  dplyr::select(tool, base, mean_sp_fwd, mean_sp_rev, f1)
+homstrad.sop_scores %>%
+  #dplyr::filter(tool != "Caretta") %>%
+  dplyr::select(tool, base, mean_sp_fwd, mean_sp_rev, f1) %>%
   group_by(base) %>%
-  summarise(mean_f1=mean(f1))
+  summarise(mean_sp_fwd=mean(mean_sp_fwd), mean_sp_rev=mean(mean_sp_rev), mean_f1=mean(f1))
 
 # All metric boxplots
 homstrad.other_metrics <- homstrad.data %>%
@@ -154,14 +166,15 @@ homstrad.wide <- homstrad.data %>%
   filter(count >= 4)
 
 homstrad.longer <- homstrad.wide %>%
-  pivot_longer(cols=c(sp_fwd, cs, tc, apdb, irmsd, nirmsd), names_to="score_type", values_to="score")
+  pivot_longer(cols=c(sp_fwd, cs, tc, apdb, irmsd, nirmsd), names_to="score_type", values_to="score") %>%
+  mutate(score_type = factor(score_type, levels=c('sp_fwd', 'tc', 'cs', 'apdb', 'irmsd', 'nirmsd')))
 
 homstrad.correlations <- homstrad.longer %>% 
   group_by(score_type) %>%
   summarize(correlation=cor(x=score, y=lddt))
-   
-ggplot(homstrad.longer) +
-  aes(x=lddt, y=score, colour=score_type, shape=score_type) + 
+  
+ggplot(homstrad.longer %>% filter(count >=4)) +
+  aes(x=lddt, y=score, colour=score_type) + 
   facet_wrap(
     ~score_type,
     nrow=6,
@@ -174,16 +187,17 @@ ggplot(homstrad.longer) +
       irmsd = "iRMSD (A)",
       nirmsd = "niRMSD (A)"
     )),
-    scales="free"
+    scales="free_y"
   ) +
-  geom_point(size=0.5) +
-  geom_smooth(method = "lm", se = FALSE, linewidth=0.5) +
+  geom_smooth(method = "lm", se = FALSE, linewidth=0.5, color="black") +
+  geom_point(size=0.4, alpha=.5) +
   geom_text(
     data = homstrad.correlations,
-    aes(x=Inf, y=Inf, label = paste("r =", round(correlation, 2))),
+    aes(x=Inf, y=Inf, label = paste("R =", round(correlation, 2))),
+    color="black",
     hjust = 1.1,
     vjust = 5.0,
-    size = 4,
+    size = 2,
   ) + 
   labs(
     title="Correlation of scoring metrics vs LDDT on Homstrad families with >=4 proteins",
@@ -195,10 +209,10 @@ ggplot(homstrad.longer) +
   theme(
     strip.background=element_blank(),
     strip.placement = "outside",
-    strip.text = element_text(size=7)
+    strip.text = element_text(size=6)
   )
 
-ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.pdf", sep=""), units="mm", width=300, height=150, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.pdf", sep=""), units="mm", width=180, height=170, dpi=300, bg="white")
 
 
 # Panel 2: 1000 AFDB Clusters
@@ -229,7 +243,7 @@ afdb.family_data <- read.delim(
   mutate(num_domains = as.factor(num_domains))
 
 afdb.data_base <- afdb.data_base %>%
-  left_join(afdb.family_data %>% select(rep_accession, num_domains), by=c('family' = 'rep_accession'))
+  left_join(afdb.family_data, by=c('family' = 'rep_accession'))
 
 # Structure vs sequence-based tools
 # LDDT scores
@@ -251,6 +265,7 @@ afdb.data_base %>%
 # LDDT improvement by refinement
 afdb.refine_diff <- afdb.data_base %>%
   filter(tool %in% c("foldmason", "foldmason_refine100") & type == "lddt") %>%
+  dplyr::select(family, tool, score) %>%
   pivot_wider(names_from=tool, values_from=score) %>%
   mutate(delta = `foldmason_refine100` - `foldmason`)
 afdb.refine_diff %>%
@@ -294,8 +309,8 @@ summariseData <- function(scoreDf, timeDf) {
       tool=name_map[tool],
       base=if_else(tool %in% structure_tools, "Structure-based", "Sequence-based"),
     )
-  fm_only      <- summary %>% filter(tool == "FoldMason")
-  fm_r100_only <- summary %>% filter(tool == "FoldMason R100")
+  fm_only      <- summary %>% dplyr::filter(tool == "FoldMason")
+  fm_r100_only <- summary %>% dplyr::filter(tool == "FoldMason R100")
   return(
     summary %>%
       mutate(
@@ -307,11 +322,22 @@ summariseData <- function(scoreDf, timeDf) {
   )
 }
 afdb.summary <- summariseData(afdb.data_base, afdb.summary_time)
-afdb.summary
+afdb.summary %>%
+  dplyr::select(tool, avg_lddt, avg_lddt_1dom, avg_lddt_2dom, avg_lddt_3dom, avg_lddt_4dom, avg_time)
+
+
+ggplot(afdb.data_base %>% filter(type == "lddt") %>% mutate(tool=name_map[tool])) +
+  aes(x=reorder(tool, score, FUN=median), color=tool, y=score) +
+  geom_boxplot() +
+  labs(x="Tool", y="MSA LDDT") +
+  scale_x_discrete(guide=guide_axis(angle=90)) +
+  guides(color="none") +
+  common_theme
+
 
 x_max=15000
-ymin=0.05
-ymax=0.8
+ymin=0
+ymax=.8
 afdb.plot_a <- ggplot(afdb.summary) +
   aes(x=speedup, y=avg_lddt, color=tool, shape=base) +
   geom_linerange(
@@ -357,13 +383,11 @@ afdb.plot_b <- ggplot(
     mutate(tool=name_map[tool])
   ) +
   aes(x=num_domains, y=avg_score, color=tool, shape=base, group=tool) +
-  #scale_size_manual(values=c(2, 2.6)) +
   scale_x_discrete(expand=c(.1,.1)) +
   scale_y_continuous(limits=c(ymin, ymax), expand=c(0,0)) +
   scale_color_manual(values = colour_map) +
   scale_shape_manual(
     values = c("Sequence-based" = 1, "Structure-based" = 2),
-    #values = c("Sequence-based" = 16, "Structure-based" = 17),
     labels = c("Sequence-based" = "Sequence-based", "Structure-based" = "Structure-based"),
   ) +
   geom_point(size=0.8, stroke=0.3) +
@@ -377,15 +401,47 @@ afdb.plot_b <- ggplot(
   guides(shape="none", color="none") +
   common_theme
 
-afdb.plot_a + afdb.plot_b
+afdb.plot_a + afdb.plot_b + plot_layout(guides="collect") & theme(legend.position="bottom")
+ggsave(file=paste(BASEDIR, "newlddt.pdf", sep=""), units="mm", width=160, height=80, dpi=300)
+
+
+# Breakdown of all tool LDDT scores on all AFDB clusters
+family_order <- afdb.data_base %>%
+  filter(type == "lddt", tool == "foldmason") %>%
+  group_by(family) %>%
+  summarise(ordering_score = mean(score), .groups = "drop") %>%
+  arrange(desc(ordering_score)) %>%
+  pull(family)
+
+ggplot(afdb.data_base %>% filter(type == "lddt") %>% group_by(family, tool, num_domains, base) %>% summarise(avg=mean(score), .groups='drop') %>% group_by(num_domains) %>% mutate(tool=name_map[tool], family = factor(family, levels = family_order))) +
+  facet_wrap(vars(num_domains), dir='v', ncol=1, scales='free_y') +
+  scale_y_discrete(drop = TRUE) +
+  aes(y=family, x=avg, color=tool, group=tool, shape=base) +
+  #aes(y=reorder(family, avg, FUN=median), x=avg, color=tool, group=tool, shape=base) +
+  scale_color_manual(name="tool", values = colour_map) +
+  #geom_line(linetype=2, linewidth=0.1) +
+  geom_point(size=3) +
+  theme_minimal()
+
+ggsave(file=paste(BASEDIR, "figures/afdb_all_families.pdf", sep=""), units="mm", limitsize=F, width=300, height=1000, bg="white")
+
+
+# Per-family FoldMason refinement delta 
+fmonly <- afdb.data_base %>% filter(type == 'lddt', tool=='foldmason')
+fmronly <- afdb.data_base %>% filter(type == 'lddt', tool=='foldmason_refine100')
+fmonly %>% inner_join(fmronly, by=c('family')) %>%
+  mutate(diff=score.y-score.x) %>%
+  dplyr::select(family, score.x, score.y, diff) %>%
+  arrange(by=diff)
+
 
 # Panel 3: Speed benchmark
 speed = new.env()
 speed.times <- read.delim(
-  paste(BASEDIR, "data/scaling_times.tsv", sep=""),
+  paste(BASEDIR, "data/afdb_scaling_times.tsv", sep=""),
   sep="\t",
   header=FALSE,
-  col.names=c("subset", "tool", "time")
+  col.names=c("subset", "tool", "type", "time")
   ) %>%
   mutate(tool=name_map[tool], base=if_else(tool %in% structure_tools, "Structure-based", "Sequence-based"))
 speed.times$subsetLabel <- gsub("subset_", "", speed.times$subset)
@@ -416,15 +472,17 @@ scientific_10 <- function(x) {
   parse(text = xx)
 }
 
+speed.times %>%
+  dplyr::select(subset, tool, time) %>%
+  pivot_wider(names_from=tool, values_from=time) %>%
+  dplyr::select(subset, `3D-Coffee`, FAMSA, FoldMason)
+
 options(scipen=999)
-speed_plot <- ggplot(speed.times) +
+speed_plot <- ggplot(speed.times %>% filter(subsetNum %in% c(10, 100, 1000, 10000, 100000))) +
   aes(x=subsetNum, y=time, color=tool, group=tool, shape=base) +
   geom_point(size=1.2) +
   geom_line(alpha=0.5, linetype='dotted') +
-  #scale_x_discrete(labels=c("10", "20", "50", "100", "500", "1k", "5k", "10k", "50k", "100k")) +
   scale_x_log10(breaks=c(1, 10, 100, 1000, 10000, 100000), labels=scientific_10) +
-  #scale_x_log10(breaks=c(1, 10, 100, 1000, 10000, 100000), labels=c("1", "10", "100", "1k", "10k", "100k"), expand=c(.1,.1)) +
-  #scale_y_log10(breaks=c(1, 10, 100, 1000, 10000, 100000), labels=convert_time) +
   scale_y_log10(breaks=c(1, 10, 60, 600, 3600, 14400, 36000, 86400), labels=convert_time) +
   scale_color_manual(name="tool", values = colour_map) +
   scale_shape_manual(name="tool", values = shape_map) +
@@ -432,6 +490,8 @@ speed_plot <- ggplot(speed.times) +
   guides(shape="none", colour="none") +
   common_theme +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+speed_plot
 
 
 # Plot the main figure from manuscript
@@ -448,7 +508,7 @@ ggsave(file=paste(BASEDIR, "figures/benchmarks.pdf", sep=""), units="mm", width=
 ggsave(file=paste(BASEDIR, "figures/benchmarks.svg", sep=""), device=svg, units="mm", width=160, height=60, dpi=300, bg="white")
 
 
-# Plot PDB protein size vs Homstrad
+# PDB vs Homstrad protein size distributions
 pdb_protein_size <- read.delim(
   paste(BASEDIR, "data/pdb_protein_sizes.csv", sep=""),
   sep=",",
@@ -478,7 +538,6 @@ median(homstrad_protein_size$length)
 combined <- rbind(pdb_protein_size, homstrad_protein_ranges)
 combined$range <- factor(combined$range, levels=pdb_protein_size$range, ordered=TRUE)
 
-# Plot and save
 ggplot(combined, aes(x = range, y=frequency, fill=source)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   labs(x = "Protein Length (AA)", y = "Frequency", fill = "Source") +
@@ -493,10 +552,10 @@ ggplot(combined, aes(x = range, y=frequency, fill=source)) +
 
 ggsave(file=paste(BASEDIR, "figures/homstrad_distribution.pdf", sep=""), units="mm", width=100, height=80, dpi=300, bg="white")
 
+
 # Total proteins in each database
 sum(pdb_protein_size$count)
 sum(homstrad_protein_ranges$count)
-
 
 # Flexibility scores
 flex = new.env()
@@ -505,3 +564,108 @@ flex.data = read.csv(paste(BASEDIR, "flexibility/scores.tsv", sep=""), sep="\t")
   pivot_wider(names_from=method, values_from=score)
 
 flex.data
+
+# AFDB other metrics
+afdb.all_copy <- afdb.data_base %>%
+  filter(type %in% c("irmsd", "nirmsd", "apdb", "lddt")) %>%
+  mutate(num_domains = "All")
+afdb.other_metrics <- afdb.data_base %>%
+  filter(type %in% c("irmsd", "nirmsd", "apdb", "lddt")) %>%
+  bind_rows(afdb.all_copy) %>%
+  mutate(num_domains = factor(num_domains, levels=c("All", 1, 2, 3, 4)))
+
+afdb.other_metrics
+
+# To display sequence tools then structure tools
+afdb.other_metrics$tool <- factor(
+  afdb.other_metrics$tool,
+  levels=unique(afdb.other_metrics$tool[order(afdb.other_metrics$base, afdb.other_metrics$tool)])
+)
+
+ggplot(
+  afdb.other_metrics %>% filter(type != "nirmsd" | score < 4.0)
+) +
+  aes(y=score, x=tool, fill=base) +
+  facet_grid(type~num_domains, scales = "free_y", space = "fixed") +
+  geom_boxplot() +
+  common_theme +
+  theme(axis.text.x=element_text(angle=90, vjust=.5, hjust=1))
+
+ggsave(file=paste(BASEDIR, "afdb_allmetrics_newlddt.pdf", sep=""), units="mm", width=180, height=160, dpi=300, bg="white")
+
+
+# AFDB per-tool MSA length distributions
+afdb.lengths <- read.csv(
+  paste(BASEDIR, "data/afdb_lengths.tsv", sep = ""),
+  sep = "\t",
+  col.names=c("family", "tool", "length")
+) %>%
+  mutate(tool=name_map[tool]) %>%
+  left_join(afdb.family_data %>% dplyr::select(rep_accession, num_domains), by=c('family' = 'rep_accession'))
+
+afdb.lengths_all <- afdb.lengths %>% mutate(num_domains = "All")
+afdb.lengths <- rbind(afdb.lengths, afdb.lengths_all)
+afdb.lengths$tool <- as.factor(afdb.lengths$tool)
+
+ggplot(afdb.lengths) +
+  aes(x = reorder(tool, length, FUN=median), y = length, color=tool) +
+  scale_color_manual(name="tool", values = colour_map) +
+  # ylim(0, 2500) +
+  geom_boxplot() +
+  facet_grid(rows = vars(num_domains), scales="free_y", space="fixed") +
+  common_theme
+
+ggsave(file=paste(BASEDIR, "figures/afdb_length_boxplots.pdf", sep=""), units="mm", width=180, height=160, dpi=300, bg="white")
+
+
+# Identity distributions of AFDB cluster dataset
+identities <- read.delim(
+  paste(BASEDIR, "data/afdb_identities.csv", sep=""),
+  sep=",",
+  header=FALSE,
+  col.names=c("family", "tool", "sequence_a", "sequence_b", "score")
+)
+
+ggplot(identities) +
+  aes(x=score, y=after_stat(density), color=tool) +
+  geom_histogram(fill='white', binwidth=0.01)  +
+  labs(x="Sequence (MMseqs2) and structure (Foldseek) identity (%)", y="Frequency", color="Tool") +
+  scale_color_discrete(labels=c('foldseek' = 'Foldseek', 'mmseqs' = 'MMseqs2')) +
+  common_theme
+  
+ggsave(file=paste(BASEDIR, "figures/afdb_identities.pdf", sep=""), units="mm", width=180, height=160, dpi=300, bg="white")
+
+
+# Homstrad pairwise F1 scores
+pairs = new.env()
+pairs.data <- read.csv(
+  paste(BASEDIR, "data/homstrad_pair_scores.tsv", sep=""),
+  sep='\t',
+  col.names = c('family', 'tool', 'score'),
+  header = F
+)
+
+pairs.fm_scores <- pairs.data %>%
+  filter(tool == 'foldmason') %>%
+  rename(fm_score = score) %>%
+  dplyr::select(family, fm_score)
+
+pairs.data <- pairs.data %>%
+  filter(tool != "foldmason") %>%
+  right_join(pairs.fm_scores, by="family")
+
+pairs.counts <- pairs.data %>%
+  group_by(tool) %>%
+  summarise(N = sum(!is.na(score)), corr=cor(fm_score, score, use="complete.obs") %>% round(2))
+
+ggplot(df2) +
+  aes(x=fm_score, y=score, color=tool) +
+  geom_point(size=0.8, alpha=0.5, stroke=NA) +
+  geom_abline(color="black", alpha=0.5, linetype=2) +
+  geom_text(data=counts, color="black", size=2, aes(x=.21, y=.96, label=paste0("N = ", N, "\nR = ", corr))) +
+  facet_wrap(~ tool, labeller = as_labeller(function(tool) name_map[tool])) +
+  labs(x="FoldMason F1 score", y="Tool F1 score") +
+  guides(color="none") +
+  common_theme
+
+ggsave(file=paste(BASEDIR, "figures/homstrad_pair_f1_scores.pdf", sep=""), units = "mm", width = 180, height = 160)

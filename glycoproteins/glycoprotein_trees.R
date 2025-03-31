@@ -124,7 +124,7 @@ all_scores_pivot <- all_scores %>%
     names_from=tree_name,
     values_from=c(quartet_similarity, rf_distance)
   )
-write.table(all_scores_pivot, paste(BASEDIR, "glycoproteins/scores.tsv", sep=""), row.names=FALSE, sep="\t", quote=FALSE)
+write.table(all_scores_pivot, paste(BASEDIR, "scores.tsv", sep=""), row.names=FALSE, sep="\t", quote=FALSE)
 
 # Format quartet similarity and RF distance label 
 get_score_label <- function(all_scores, set_, tree_name_) {
@@ -227,7 +227,6 @@ ggsave(paste(BASEDIR, "glycoproteins/trees.png", sep=""), units="mm", width=160,
 
 
 # Calculating mean bootstrap support of trees
-
 find_matching_nodes <- function(tree1, tree2) {
   if (!setequal(tree1$tip.label, tree2$tip.label)) {
     stop("The trees do not have the same set of taxa.")
@@ -290,6 +289,7 @@ calculate_matching_node_stats <- function(a, b) {
   return(stats)
 }
 
+# Table shown in manuscript
 node_stats <- rbind(
   calculate_matching_node_stats(f_e_concat, m_e) %>% mutate(tree="E", tree_method="concat"),
   calculate_matching_node_stats(f_e1_concat, m_e1) %>% mutate(tree="E1", tree_method="concat"),
@@ -301,3 +301,23 @@ node_stats <- rbind(
   calculate_matching_node_stats(f_e1_3di, m_e1) %>% mutate(tree="E1", tree_method="3di"),
   calculate_matching_node_stats(f_e2_3di, m_e2) %>% mutate(tree="E2", tree_method="3di")
 )
+# Mean_Tree1_Bootstrap Mean_Tree2_Bootstrap Mean_Matched_Tree1_Bootstrap Mean_Matched_Tree2_Bootstrap Mean_Difference Total_Nodes
+# 1             92.63934             87.05738                     97.52846                     94.38211       3.1463415         245
+# 2             90.89305             91.67914                     95.06015                     95.44361      -0.3834586         188
+# 3             88.71505             93.30108                     95.56364                     95.99091      -0.4272727         187
+# 4             89.37295             87.05738                     97.36264                     94.56044       2.8021978         245
+# 5             91.17112             91.67914                     95.96460                     97.58407      -1.6194690         188
+# 6             87.70968             93.30108                     95.18750                     97.43750      -2.2500000         187
+# 7             87.09016             87.05738                     94.17021                     93.17021       1.0000000         245
+# 8             81.42781             91.67914                     91.76471                     94.70588      -2.9411765         188
+# 9             86.36022             93.30108                     93.79070                     97.96512      -4.1744186         187
+# n Total_Difference_Positive Total_Difference_Negative Total_Difference_Zero tree tree_method
+# 1 124                        56                        17                    50    E      concat
+# 2 134                        32                        38                    63   E1      concat
+# 3 111                        18                        31                    61   E2      concat
+# 4  92                        45                        13                    33    E          aa
+# 5 114                        25                        39                    49   E1          aa
+# 6  97                        15                        27                    54   E2          aa
+# 7 142                        44                        40                    57    E         3di
+# 8  69                        16                        30                    22   E1         3di
+# 9  87                        13                        34                    39   E2         3di
