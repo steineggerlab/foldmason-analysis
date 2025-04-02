@@ -221,9 +221,9 @@ e_col_label + e1_col_label + e2_col_label +
     legend.key.spacing.y = unit(-.2, "lines"),
   )
 
-ggsave(paste(BASEDIR, "glycoproteins/trees.pdf", sep=""), units="mm", width=160, height=200, dpi=300)
-ggsave(paste(BASEDIR, "glycoproteins/trees.svg", sep=""), device=svg, units="mm", width=160, height=200, dpi=300)
-ggsave(paste(BASEDIR, "glycoproteins/trees.png", sep=""), units="mm", width=160, height=200, dpi=300, bg="white")
+ggsave(paste(BASEDIR, "trees.pdf", sep=""), units="mm", width=160, height=200, dpi=300)
+ggsave(paste(BASEDIR, "trees.svg", sep=""), device=svg, units="mm", width=160, height=200, dpi=300)
+ggsave(paste(BASEDIR, "trees.png", sep=""), units="mm", width=160, height=200, dpi=300, bg="white")
 
 
 # Calculating mean bootstrap support of trees
@@ -301,23 +301,25 @@ node_stats <- rbind(
   calculate_matching_node_stats(f_e1_3di, m_e1) %>% mutate(tree="E1", tree_method="3di"),
   calculate_matching_node_stats(f_e2_3di, m_e2) %>% mutate(tree="E2", tree_method="3di")
 )
+node_stats
+
 # Mean_Tree1_Bootstrap Mean_Tree2_Bootstrap Mean_Matched_Tree1_Bootstrap Mean_Matched_Tree2_Bootstrap Mean_Difference Total_Nodes
-# 1             92.63934             87.05738                     97.52846                     94.38211       3.1463415         245
-# 2             90.89305             91.67914                     95.06015                     95.44361      -0.3834586         188
-# 3             88.71505             93.30108                     95.56364                     95.99091      -0.4272727         187
-# 4             89.37295             87.05738                     97.36264                     94.56044       2.8021978         245
-# 5             91.17112             91.67914                     95.96460                     97.58407      -1.6194690         188
-# 6             87.70968             93.30108                     95.18750                     97.43750      -2.2500000         187
-# 7             87.09016             87.05738                     94.17021                     93.17021       1.0000000         245
-# 8             81.42781             91.67914                     91.76471                     94.70588      -2.9411765         188
-# 9             86.36022             93.30108                     93.79070                     97.96512      -4.1744186         187
-# n Total_Difference_Positive Total_Difference_Negative Total_Difference_Zero tree tree_method
-# 1 124                        56                        17                    50    E      concat
-# 2 134                        32                        38                    63   E1      concat
-# 3 111                        18                        31                    61   E2      concat
-# 4  92                        45                        13                    33    E          aa
-# 5 114                        25                        39                    49   E1          aa
-# 6  97                        15                        27                    54   E2          aa
-# 7 142                        44                        40                    57    E         3di
-# 8  69                        16                        30                    22   E1         3di
-# 9  87                        13                        34                    39   E2         3di
+#             91.55738             87.05738                     97.39091                     95.99091      1.40000000         245
+#             90.59358             91.67914                     95.53846                     95.62308     -0.08461538         188
+#             90.91398             93.30108                     96.74545                     97.59091     -0.84545455         187
+#             89.36214             87.05738                     97.69512                     96.02439      1.67073171         245
+#             89.53476             91.67914                     97.57732                     97.93814     -0.36082474         188
+#             88.66129             93.30108                     94.87129                     96.87129     -2.00000000         187
+#             85.88525             87.05738                     94.40179                     96.11607     -1.71428571         245
+#             83.05882             91.67914                     93.72881                     95.42373     -1.69491525         188
+#             88.99462             93.30108                     95.97701                     97.72414     -1.74712644         187
+# n   Total_Difference_Positive Total_Difference_Negative Total_Difference_Zero tree tree_method
+# 111                        49                        18                    43    E      concat
+# 131                        23                        42                    65   E1      concat
+# 111                        22                        27                    61   E2      concat
+#  83                        30                        14                    38    E          aa
+#  98                        18                        29                    50   E1          aa
+# 102                        19                        32                    50   E2          aa
+# 113                        34                        27                    51    E         3di
+#  60                        12                        23                    24   E1         3di
+#  88                        10                        31                    46   E2         3di
