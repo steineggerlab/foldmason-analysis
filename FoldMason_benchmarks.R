@@ -76,13 +76,14 @@ common_theme <- theme_bw(base_family="Helvetica", base_size=7) + theme(
 )
 
 structure_tools = c("mTM-align", "MUSTANG", "Matt", "Caretta",
-                    "FoldMason", "FoldMason New", "FoldMason New R1000", "FoldMason FWBW", "FoldMason FWBW R1000", "FoldMason R100", "US-align", "3D-Coffee")
+                    "FoldMason", "FoldMason R100", "US-align", "3D-Coffee")
 sequence_tools = c("Clustal Omega", "MUSCLE", "MAFFT", "FAMSA")
 
 # Panel 1: Homstrad
 homstrad = new.env()
 homstrad.data <- read.delim(
   paste(BASEDIR, "data/homstrad_scores.tsv", sep=""),
+  # paste(BASEDIR, "data/homstrad_scores_osc.tsv", sep=""),
   sep="\t",
   header = F,
   col.names = c("family", "tool", "type", "score"),
@@ -115,8 +116,8 @@ homstrad.sop_scores %>% arrange(desc(f1))
 
 homstrad.plot <- ggplot(homstrad.sop_scores) +
   aes(y=mean_sp_fwd, x=mean_sp_rev, colour=tool, shape=base) +
-  xlim(78, 95) +
-  ylim(78, 95) +
+  xlim(75, 95) +
+  ylim(75, 95) +
   scale_color_manual(values = colour_map) +
   geom_point(size=1.2) +
   guides(
@@ -134,7 +135,7 @@ ggsave(file=paste(BASEDIR, "figures/homstrad_sop_plot.pdf", sep=""), units="mm",
 homstrad.sop_scores %>%
   dplyr::select(tool, base, mean_sp_fwd, mean_sp_rev, f1)
 homstrad.sop_scores %>%
-  #dplyr::filter(tool != "Caretta") %>%
+  # dplyr::filter(tool != "Caretta") %>%
   dplyr::select(tool, base, mean_sp_fwd, mean_sp_rev, f1) %>%
   group_by(base) %>%
   summarise(mean_sp_fwd=mean(mean_sp_fwd), mean_sp_rev=mean(mean_sp_rev), mean_f1=mean(f1))
@@ -143,7 +144,7 @@ homstrad.sop_scores %>%
 homstrad.other_metrics <- homstrad.data %>%
   filter(type %in% c("irmsd", "nirmsd", "lddt", "apdb", "tc", "cs", "sp_fwd", "sp_rev")) %>%
   left_join(homstrad.counts, by=join_by(family)) %>% 
-  filter(count >= 2) %>%
+  filter(count >= 4) %>%
   mutate(score=as.numeric(score))
 homstrad.other_metrics$tool <- factor(homstrad.other_metrics$tool, levels=unique(homstrad.other_metrics$tool[order(homstrad.other_metrics$base, homstrad.other_metrics$tool)]))
 
@@ -221,6 +222,7 @@ ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.pdf", sep=""), units="
 afdb = new.env()
 afdb.data_base <- read.delim(
   paste(BASEDIR, "data/afdb_scores.tsv", sep=""),
+  # paste(BASEDIR, "data/afdb_scores_osc.tsv", sep=""),
   sep="\t",
   header=FALSE,
   col.names=c("family", "tool", "type", "score")
@@ -336,8 +338,10 @@ ggplot(afdb.data_base %>% filter(type == "lddt") %>% mutate(tool=name_map[tool])
 
 
 x_max=15000
-ymin=0
-ymax=.8
+# ymin=0.2
+# ymax=0.8
+ymin=0.2
+ymax=0.9
 afdb.plot_a <- ggplot(afdb.summary) +
   aes(x=speedup, y=avg_lddt, color=tool, shape=base) +
   geom_linerange(
@@ -349,7 +353,7 @@ afdb.plot_a <- ggplot(afdb.summary) +
   geom_point(size=1.2) +
   scale_x_log10(limits=c(0.5, x_max), expand=c(0,0), labels=label_log()) +
   scale_size_manual(values=c(2, 2.6)) +
-  scale_y_continuous(limits=c(ymin, ymax), expand=c(0,0)) +
+  scale_y_continuous(breaks=seq(ymin, ymax, by=0.2), limits=c(ymin, ymax), expand=c(0.00,0.0)) +
   scale_color_manual(values = colour_map) +
   scale_shape_manual(
     values = c("Sequence-based" = 16, "Structure-based" = 17),
@@ -384,7 +388,7 @@ afdb.plot_b <- ggplot(
   ) +
   aes(x=num_domains, y=avg_score, color=tool, shape=base, group=tool) +
   scale_x_discrete(expand=c(.1,.1)) +
-  scale_y_continuous(limits=c(ymin, ymax), expand=c(0,0)) +
+  scale_y_continuous(breaks=seq(ymin, ymax, by=0.2), limits=c(ymin, ymax), expand=c(0.00,0.0)) +
   scale_color_manual(values = colour_map) +
   scale_shape_manual(
     values = c("Sequence-based" = 1, "Structure-based" = 2),
@@ -402,8 +406,6 @@ afdb.plot_b <- ggplot(
   common_theme
 
 afdb.plot_a + afdb.plot_b + plot_layout(guides="collect") & theme(legend.position="bottom")
-ggsave(file=paste(BASEDIR, "newlddt.pdf", sep=""), units="mm", width=160, height=80, dpi=300)
-
 
 # Breakdown of all tool LDDT scores on all AFDB clusters
 family_order <- afdb.data_base %>%
@@ -412,7 +414,7 @@ family_order <- afdb.data_base %>%
   summarise(ordering_score = mean(score), .groups = "drop") %>%
   arrange(desc(ordering_score)) %>%
   pull(family)
-
+afdb.all_fams <- afdb.data_base %>% filter(type == "lddt") %>% group_by(family, tool, num_domains, base) %>% summarise(avg=mean(score), .groups='drop') %>% group_by(num_domains) %>% mutate(tool=name_map[tool], family = factor(family, levels = family_order))
 ggplot(afdb.data_base %>% filter(type == "lddt") %>% group_by(family, tool, num_domains, base) %>% summarise(avg=mean(score), .groups='drop') %>% group_by(num_domains) %>% mutate(tool=name_map[tool], family = factor(family, levels = family_order))) +
   facet_wrap(vars(num_domains), dir='v', ncol=1, scales='free_y') +
   scale_y_discrete(drop = TRUE) +
@@ -425,15 +427,14 @@ ggplot(afdb.data_base %>% filter(type == "lddt") %>% group_by(family, tool, num_
 
 ggsave(file=paste(BASEDIR, "figures/afdb_all_families.pdf", sep=""), units="mm", limitsize=F, width=300, height=1000, bg="white")
 
-
 # Per-family FoldMason refinement delta 
 fmonly <- afdb.data_base %>% filter(type == 'lddt', tool=='foldmason')
 fmronly <- afdb.data_base %>% filter(type == 'lddt', tool=='foldmason_refine100')
 fmonly %>% inner_join(fmronly, by=c('family')) %>%
   mutate(diff=score.y-score.x) %>%
   dplyr::select(family, score.x, score.y, diff) %>%
-  arrange(by=diff)
-
+  arrange(by=diff) %>%
+  summarise(med_diff=median(diff)*100, mean_diff=mean(diff) * 100, max_diff=max(diff) * 100)
 
 # Panel 3: Speed benchmark
 speed = new.env()
@@ -635,7 +636,6 @@ ggplot(identities) +
   
 ggsave(file=paste(BASEDIR, "figures/afdb_identities.pdf", sep=""), units="mm", width=180, height=160, dpi=300, bg="white")
 
-
 # Homstrad pairwise F1 scores
 pairs = new.env()
 pairs.data <- read.csv(
@@ -654,11 +654,13 @@ pairs.data <- pairs.data %>%
   filter(tool != "foldmason") %>%
   right_join(pairs.fm_scores, by="family")
 
+pairs.data
+
 pairs.counts <- pairs.data %>%
   group_by(tool) %>%
   summarise(N = sum(!is.na(score)), corr=cor(fm_score, score, use="complete.obs") %>% round(2))
 
-ggplot(df2) +
+ggplot(pairs.data) +
   aes(x=fm_score, y=score, color=tool) +
   geom_point(size=0.8, alpha=0.5, stroke=NA) +
   geom_abline(color="black", alpha=0.5, linetype=2) +
