@@ -1,5 +1,16 @@
 # For TreeIO/ggtree
 # BiocManager::install("YuLab-SMU/treedataverse")
+# install.packages("Quartet")
+# install.packages("ape")
+# install.packages("phangorn")
+# install.packages("dplyr")
+# install.packages("tidyr")
+# install.packages("BiocManager")
+# BiocManager::install("ggtree")
+# install.packages("ggplot2")
+# install.packages("svglite")
+# install.packages("patchwork")
+# install.packages("grid")
 
 library(Quartet)
 library(ape)
