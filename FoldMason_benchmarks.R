@@ -199,7 +199,8 @@ homstrad.plot <- ggplot(homstrad.combined) +
   common_theme
 
 homstrad.plot
-ggsave(file=paste(BASEDIR, "figures/homstrad_sop_plot.png", sep=""), units="mm", width=140, height=140, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2A_HOMSTRAD_SoP.png", sep=""), units="mm", width=140, height=140, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2A_HOMSTRAD_SoP.pdf", sep=""), units="mm", width=140, height=140, dpi=300, bg="white")
 
 # F1 scores
 homstrad.sop_scores %>%
@@ -284,8 +285,8 @@ ggplot(homstrad.longer %>% filter(count >= 4)) +
     strip.placement = "outside",
     strip.text = element_text(size=6)
   )
-ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.pdf", sep=""), units="mm", width=140, height=80, dpi=300, bg="white")
-ggsave(file=paste(BASEDIR, "figures/homstrad_correlations.png", sep=""), units="mm", width=140, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S3_HOMSTRAD_correlations.pdf", sep=""), units="mm", width=140, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S3_HOMSTRAD_correlations.png", sep=""), units="mm", width=140, height=80, dpi=300, bg="white")
 
 
 # Panel 2: 1000 AFDB Clusters
@@ -428,7 +429,8 @@ ggplot(
   scale_x_discrete(guide=guide_axis(angle=45)) +
   guides(color="none") +
   common_theme
-ggsave(file=paste(BASEDIR, "figures/afdb_all_tool_boxplots.png", sep=""), units="mm", limitsize=F, width=140, height=120, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S7_AFDB_all_tool_boxplots.png", sep=""), units="mm", limitsize=F, width=140, height=120, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S7_AFDB_all_tool_boxplots.pdf", sep=""), units="mm", limitsize=F, width=140, height=120, bg="white")
 
 
 # Fig. 2B
@@ -516,7 +518,16 @@ afdb.line_plot <- ggplot(line_test_subset) +
     legend.margin = margin(t=0, r=0, b=0, l=0)
   )
 afdb.line_plot
-ggsave(file=paste(BASEDIR, "figures/afdb_line_plot_alltools.png", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2B_AFDB.png", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2B_AFDB.pdf", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+
+# When including all tools
+ggsave(file=paste(BASEDIR, "figures/Fig_S5_AFDB_all_tools.png", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S5_AFDB_all_tools.pdf", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+
+# When using only-scoring-cols LDDT metric
+ggsave(file=paste(BASEDIR, "figures/Fig_S6_AFDB_osc.png", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S6_AFDB_osc.pdf", sep=""), units="mm", limitsize=F, width=105, height=70, bg="white")
 
 # Breakdown of all tool LDDT scores on all AFDB clusters
 family_order <- afdb.data_base %>%
@@ -589,7 +600,8 @@ speed_plot <- ggplot(speed.times %>% filter(subsetNum %in% c(10, 100, 1000, 1000
   common_theme +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 speed_plot
-ggsave(file=paste(BASEDIR, "figures/afdb_scaling.png", sep=""), units="mm", width=80, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2C_AFDB_scaling.png", sep=""), units="mm", width=80, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2C_AFDB_scaling.pdf", sep=""), units="mm", width=80, height=80, dpi=300, bg="white")
 
 
 # Fig. 2D
@@ -627,6 +639,8 @@ flex.plot <- ggplot(flex.data) +
   )
 
 flex.plot
+ggsave(file=paste(BASEDIR, "figures/Fig_2D_flexible_proteins.png", sep=""), units="mm", width=80, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2D_flexible_proteins.pdf", sep=""), units="mm", width=80, height=80, dpi=300, bg="white")
 
 
 # Plot entire Fig. 2
@@ -652,8 +666,8 @@ flex.plot
 
 # device=svg is required for correct import into figma, converts text to paths though
 # svglite preserves text but has weirdness with path stroke/fill when imported into figma
-ggsave(file=paste(BASEDIR, "figures/benchmarks.pdf", sep=""), units="mm", width=160, height=60, dpi=300, bg="white")
-ggsave(file=paste(BASEDIR, "figures/benchmarks.svg", sep=""), device=svg, units="mm", width=160, height=60, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2_full.pdf", sep=""), units="mm", width=160, height=60, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_2_full.svg", sep=""), device=svg, units="mm", width=160, height=60, dpi=300, bg="white")
 
 
 # Fig. S2
@@ -695,7 +709,8 @@ ggplot(combined, aes(x = range, y=frequency, fill=source)) +
     plot.margin = margin(0, 0, 0, 0),
     legend.position=c(0.9, 0.9)
   )
-ggsave(file=paste(BASEDIR, "figures/homstrad_distribution.pdf", sep=""), units="mm", width=100, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S2_HOMSTRAD_PDB_distribution.png", sep=""), units="mm", width=100, height=80, dpi=300, bg="white")
+ggsave(file=paste(BASEDIR, "figures/Fig_S2_HOMSTRAD_PDB_distribution.pdf", sep=""), units="mm", width=100, height=80, dpi=300, bg="white")
 
 
 # Total proteins in each database
