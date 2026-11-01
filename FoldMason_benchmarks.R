@@ -134,7 +134,7 @@ homstrad.counts <- read.delim(
 homstrad.sop_scores <- homstrad.data %>%
   filter(tool != "FoldMason R100") %>%
   left_join(homstrad.counts, by=join_by(family)) %>%
-  filter(count >= 2 & startsWith(type, "sp_") & tool != "Homstrad") %>%
+  filter(count >= 2 & startsWith(type, "sp_") & tool != "HOMSTRAD") %>%
   mutate(score=as.numeric(score), tool=if_else(tool == "FoldMason R100 OSC", "FoldMason R100", tool)) %>%
   group_by(tool, type, base) %>%
   summarise(mean=mean(score), sd=sd(score), .groups="drop") %>%
@@ -144,7 +144,7 @@ homstrad.sop_scores <- homstrad.data %>%
 homstrad.sop_scores_hard <- homstrad.data %>%
   filter(family %in% homstrad.hard & tool != "FoldMason R100") %>%
   left_join(homstrad.counts, by=join_by(family)) %>%
-  filter(count >= 2 & startsWith(type, "sp_") & tool != "Homstrad") %>%
+  filter(count >= 2 & startsWith(type, "sp_") & tool != "HOMSTRAD") %>%
   mutate(score=as.numeric(score), tool=if_else(tool == "FoldMason R100 OSC", "FoldMason R100", tool)) %>%
   group_by(tool, type, base) %>%
   summarise(mean=mean(score), sd=sd(score), .groups="drop") %>%

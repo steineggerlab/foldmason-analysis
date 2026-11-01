@@ -53,7 +53,6 @@ apply_fn() {
 if [ -e "$REF" ]
 then
 	apply_fn compute_score
-	apply_fn compute_nirmsd
 fi
 
 # Find all msa2lddt HTML reports and extract LDDT scores
